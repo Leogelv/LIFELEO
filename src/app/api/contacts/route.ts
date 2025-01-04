@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 
-const YANDEX_API_KEY = 'AQVNwPYqs6YHWKQQ77Yi9VZZQPyLsQnOY0xYHhYL'
+if (!process.env.YANDEX_API_KEY) {
+  throw new Error('YANDEX_API_KEY is not set in environment variables')
+}
 
 export async function GET(request: Request) {
   // Handle CORS preflight requests
@@ -31,7 +33,7 @@ export async function GET(request: Request) {
       {
         method: 'GET',
         headers: {
-          'Authorization': `Api-Key ${YANDEX_API_KEY}`,
+          'Authorization': `Api-Key ${process.env.YANDEX_API_KEY}`,
           'Content-Type': 'application/json'
         }
       }
