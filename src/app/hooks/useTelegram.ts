@@ -17,6 +17,11 @@ export function useTelegram() {
       // Инициализация WebApp
       tg.ready()
       tg.expand()
+      tg.requestFullscreen()
+      tg.isVerticalSwipesEnabled = true
+      tg.disableVerticalSwipes()
+      tg.setHeaderColor('#1A1A1A')
+      tg.setBackgroundColor('#1A1A1A')
       
       // Получаем данные пользователя
       if (tg.initDataUnsafe?.user) {
