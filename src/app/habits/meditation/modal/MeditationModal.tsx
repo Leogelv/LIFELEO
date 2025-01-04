@@ -18,26 +18,18 @@ interface MeditationSession {
 interface MeditationModalProps {
   isOpen: boolean
   onClose: () => void
+  onComplete: (duration: number) => void
+  onCancel: () => void
+  session: MeditationSession | null
 }
 
-export function MeditationModal({ isOpen, onClose }: MeditationModalProps) {
+export function MeditationModal({ isOpen, onClose, onComplete, onCancel, session }: MeditationModalProps) {
   const [timeLeftMinutes, setTimeLeftMinutes] = useState(60)
   const [isActive, setIsActive] = useState(false)
   const [elapsedMinutes, setElapsedMinutes] = useState(0)
-  const [userId, setUserId] = useState<string>('375634162') // Дефолтный userId
-  const [session, setSession] = useState<MeditationSession | null>(null)
   const supabase = createClient()
   const gongAudioRef = useRef<HTMLAudioElement | null>(null)
   const router = useRouter()
-
-  useEffect(() => {
-    // Проверяем наличие Telegram WebApp
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp
-      // Здесь можно получить userId из Telegram WebApp
-      // setUserId(tg.initDataUnsafe?.user?.id)
-    }
-  }, [])
 
   // Инициализируем аудио при монтировании с preload
   useEffect(() => {
@@ -45,36 +37,15 @@ export function MeditationModal({ isOpen, onClose }: MeditationModalProps) {
     gongAudioRef.current.preload = 'auto'
   }, [])
 
-  // При открытии модального окна создаем новую сессию
+  // При открытии модального окна устанавливаем оставшееся время
   useEffect(() => {
-    if (isOpen && !session) {
-      createSession()
+    if (isOpen && session) {
+      const remainingMinutes = session.time_left || (60 - (session.duration || 0))
+      setTimeLeftMinutes(remainingMinutes > 0 ? remainingMinutes : 0)
+      setElapsedMinutes(session.duration || 0)
+      setIsActive(true)
     }
-  }, [isOpen])
-
-  // Создаем новую сессию медитации
-  const createSession = async () => {
-    const newSession: MeditationSession = {
-      uuid: crypto.randomUUID(),
-      user_id: userId,
-      date: new Date().toISOString(),
-      type: 'vipassana',
-      duration: 0,
-      completed: false,
-      time_left: 60
-    }
-
-    const { error } = await supabase
-      .from('meditation_sessions')
-      .insert(newSession)
-
-    if (error) {
-      console.error('Error creating session:', error)
-      return
-    }
-
-    setSession(newSession)
-  }
+  }, [isOpen, session])
 
   // Функция завершения медитации
   const finishMeditation = async () => {
@@ -105,6 +76,7 @@ export function MeditationModal({ isOpen, onClose }: MeditationModalProps) {
       }
     }
 
+    onComplete(60)
     setTimeout(() => {
       router.push('/')
     }, 2000) // Даем время на проигрывание гонга
@@ -148,21 +120,19 @@ export function MeditationModal({ isOpen, onClose }: MeditationModalProps) {
     }
   }, [isActive, timeLeftMinutes, session])
 
+  const formatTime = (minutes: number) => {
+    const mins = Math.floor(minutes)
+    const secs = Math.floor((minutes % 1) * 60)
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
   const handleStart = () => {
     setIsActive(true)
   }
 
-  const handleCancel = async () => {
+  const handleCancel = () => {
     setIsActive(false)
-    
-    // Удаляем незавершенную сессию
-    if (session?.uuid) {
-      await supabase
-        .from('meditation_sessions')
-        .delete()
-        .eq('uuid', session.uuid)
-    }
-    
+    onCancel()
     router.push('/')
   }
 
@@ -177,6 +147,7 @@ export function MeditationModal({ isOpen, onClose }: MeditationModalProps) {
         return
       }
 
+      // Обновляем время напрямую, без предварительной проверки
       const { error: updateError } = await supabase
         .from('meditation_sessions')
         .update({ time_left: Math.floor(newTimeLeft) })
@@ -184,6 +155,8 @@ export function MeditationModal({ isOpen, onClose }: MeditationModalProps) {
 
       if (updateError) {
         console.error('Error updating session:', updateError)
+      } else {
+        console.log('Successfully updated time_left to:', Math.floor(newTimeLeft))
       }
     } catch (error) {
       console.error('Failed to add time:', error)

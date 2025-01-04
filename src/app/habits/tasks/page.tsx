@@ -13,7 +13,6 @@ import { ru } from 'date-fns/locale'
 import Link from 'next/link'
 import { UniversalCalendarGrid } from '@/app/components/habits/UniversalCalendarGrid'
 import { motion, AnimatePresence } from 'framer-motion'
-import { TelegramLayout } from '@/app/components/layouts/TelegramLayout'
 
 interface Todo {
   id: string
@@ -104,13 +103,31 @@ export default function TasksPage() {
   }
 
   return (
-    <TelegramLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen relative overflow-hidden"
+    >
+      {/* Animated gradient background */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="fixed inset-0 bg-gradient-to-br from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] animate-gradient-slow" 
+      />
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="fixed inset-0 bg-gradient-to-tr from-rose-500/5 via-transparent to-pink-500/5 animate-gradient-slow-reverse" 
+      />
+
+      {/* Content */}
+      <div className="relative z-10">
         {/* Header */}
         <motion.div 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="py-6"
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
         >
           <div className="flex items-center justify-between">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -137,7 +154,7 @@ export default function TasksPage() {
         </motion.div>
 
         {/* Main Content */}
-        <div className="space-y-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           {/* Add Task Form */}
           <motion.form 
             initial={{ y: 20, opacity: 0 }}
@@ -329,6 +346,6 @@ export default function TasksPage() {
           </motion.div>
         </div>
       </div>
-    </TelegramLayout>
+    </motion.div>
   )
 } 

@@ -3,23 +3,8 @@
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
+import { Contact } from '@/types/contacts'
 import Link from 'next/link'
-
-interface Contact {
-  id: number
-  user_id: number
-  first_name: string
-  last_name?: string
-  username?: string
-  photo_url?: string
-  created_at: string
-  last_message?: string
-  is_pinned?: boolean
-  summary?: string
-  history?: {
-    analysis?: string
-  }
-}
 
 // Массив крутых градиентов
 const gradients = [
