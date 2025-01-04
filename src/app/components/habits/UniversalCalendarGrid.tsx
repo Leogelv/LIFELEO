@@ -38,6 +38,7 @@ interface UniversalCalendarGridProps {
   onAddNow?: () => void
   onAddWithDate?: () => void
   onTaskMove?: (taskId: string, newDate: Date) => void
+  onMonthChange?: (date: Date) => void
 }
 
 export function UniversalCalendarGrid({ 
@@ -47,7 +48,8 @@ export function UniversalCalendarGrid({
   mode,
   onAddNow,
   onAddWithDate,
-  onTaskMove
+  onTaskMove,
+  onMonthChange
 }: UniversalCalendarGridProps) {
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
@@ -209,7 +211,32 @@ export function UniversalCalendarGrid({
       return renderTasksForDay(day)
     }
 
-    const daySessions = sessions.filter(s => isSameDay(new Date(s.date), day))
+    // Преобразуем day в строку в формате YYYY-MM-DD для сравнения
+    const dayStr = day.toISOString().split('T')[0]
+    
+    // Debug: показываем все сессии при первом рендере
+    if (mode === 'water' && day.getDate() === 1) {
+      console.log('Все сессии:', sessions)
+    }
+    
+    const daySessions = sessions.filter(s => {
+      const matches = s.date === dayStr
+      // Debug: показываем сравнение дат для каждой сессии
+      if (mode === 'water') {
+        console.log(`Сравнение дат для ${dayStr}:`, {
+          dayStr,
+          sessionDate: s.date,
+          matches
+        })
+      }
+      return matches
+    })
+    
+    // Debug: показываем результат фильтрации
+    if (mode === 'water' && daySessions.length > 0) {
+      console.log(`Найдены сессии для ${dayStr}:`, daySessions)
+    }
+    
     if (!daySessions.length) return null
 
     switch (mode) {
@@ -276,6 +303,29 @@ export function UniversalCalendarGrid({
   return (
     <div className="w-full space-y-8" style={{ overflow: 'visible' }}>
       <div className="w-full relative" style={{ overflow: 'visible' }}>
+        {/* Навигация по месяцам */}
+        <div className="flex items-center justify-between mb-8">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onMonthChange?.(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
+            className="p-2 rounded-lg hover:bg-[#E8D9C5]/5 transition-colors"
+          >
+            <Icon icon="solar:arrow-left-outline" className="w-6 h-6 text-[#E8D9C5]/60" />
+          </motion.button>
+          
+          <h2 className="text-xl font-light text-[#E8D9C5]">
+            {format(currentDate, 'LLLL yyyy', { locale: ru })}
+          </h2>
+          
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onMonthChange?.(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
+            className="p-2 rounded-lg hover:bg-[#E8D9C5]/5 transition-colors"
+          >
+            <Icon icon="solar:arrow-right-outline" className="w-6 h-6 text-[#E8D9C5]/60" />
+          </motion.button>
+        </div>
+
         {/* Дни недели */}
         <div className="grid grid-cols-4 gap-4 mb-4">
           {['Пн', 'Вт', 'Ср', 'Чт'].map(day => (
@@ -286,7 +336,14 @@ export function UniversalCalendarGrid({
         </div>
 
         {/* Сетка дней */}
-        <div className="grid grid-cols-4 gap-4" style={{ overflow: 'visible' }}>
+        <motion.div 
+          key={currentDate.toISOString()}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          className="grid grid-cols-4 gap-4" 
+          style={{ overflow: 'visible' }}
+        >
           {days.map((day, i) => {
             const isToday = isSameDay(day, new Date())
             return (
@@ -323,7 +380,7 @@ export function UniversalCalendarGrid({
               </motion.div>
             )
           })}
-        </div>
+        </motion.div>
       </div>
     </div>
   )
