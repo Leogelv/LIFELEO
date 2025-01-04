@@ -7,9 +7,9 @@ if (!process.env.YANDEX_API_KEY) {
   throw new Error('YANDEX_API_KEY is not set in environment variables')
 }
 
-if (!process.env.OPENAI_API_KEY) {
-  console.error('❌ OPENAI_API_KEY is not set')
-  throw new Error('OPENAI_API_KEY is not set in environment variables')
+if (!process.env.DEEPSEEK_API_KEY) {
+  console.error('❌ DEEPSEEK_API_KEY is not set')
+  throw new Error('DEEPSEEK_API_KEY is not set in environment variables')
 }
 
 export async function POST(request: Request) {
@@ -52,20 +52,64 @@ export async function POST(request: Request) {
     const history = await historyResponse.json()
     console.log('✅ Got history from Yandex')
 
-    // 2. Анализируем через OpenAI
-    console.log('🧠 Analyzing with OpenAI')
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // 2. Анализируем через DeepSeek
+    console.log('🧠 Analyzing with DeepSeek')
+    const deepseekResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "gpt-4-1106-preview",
+        model: "deepseek-chat",
+        response_format: {
+          type: 'json_object'
+        },
         messages: [
           {
             role: "system",
-            content: "Ты - помощник для анализа диалогов. Проанализируй историю сообщений и составь краткое резюме о характере общения, основных темах и особенностях взаимодействия."
+            content: `Проанализируй историю переписки и предоставь детальный анализ в следующем JSON формате:
+
+{
+  "summary": "Краткий обзор основных тем и ключевых моментов беседы",
+  "topics": ["Массив основных обсуждаемых тем"],
+  "sentiment": "Общий тон беседы (positive/neutral/negative)",
+  "actionItems": ["Массив упомянутых задач или дел на будущее"],
+  "participants": {
+    "roles": ["Роли участников беседы"],
+    "interests": ["Основные интересы участников"],
+    "communicationStyle": ["Стили общения участников (визуал/аудиал/кинестет/дигитал)"]
+  },
+  "context": {
+    "type": "Тип беседы (деловая/личная/смешанная)",
+    "mainGoal": "Основная цель обсуждения",
+    "technologies": ["Упомянутые технологии/продукты/компании"]
+  },
+  "psychologicalAspects": {
+    "values": ["Ключевые ценности участников"],
+    "motivations": ["Мотивационные факторы"],
+    "mood": "Общее настроение беседы"
+  },
+  "businessAnalysis": {
+    "strengths": ["Сильные стороны сотрудничества"],
+    "risks": ["Потенциальные риски"],
+    "recommendations": ["Рекомендации по дальнейшим действиям"]
+  },
+  "conclusions": {
+    "achieved": ["Достигнутые результаты"],
+    "pending": ["Нерешенные вопросы"],
+    "nextSteps": ["Предлагаемые следующие шаги"]
+  }
+}
+
+Обрати особое внимание на:
+1. Роли и интересы участников
+2. Психологические аспекты общения
+3. Деловой контекст и перспективы
+4. Конкретные результаты и планы
+5. Рекомендации по улучшению взаимодействия
+
+Отвечай строго на русском языке в указанном JSON формате.`
           },
           {
             role: "user",
@@ -75,23 +119,23 @@ export async function POST(request: Request) {
       })
     })
 
-    if (!openaiResponse.ok) {
-      const text = await openaiResponse.text()
-      console.error('❌ OpenAI API error:', {
-        status: openaiResponse.status,
-        statusText: openaiResponse.statusText,
+    if (!deepseekResponse.ok) {
+      const text = await deepseekResponse.text()
+      console.error('❌ DeepSeek API error:', {
+        status: deepseekResponse.status,
+        statusText: deepseekResponse.statusText,
         response: text
       })
       return NextResponse.json({ 
         error: 'Failed to analyze chat history',
-        details: `API returned ${openaiResponse.status} ${openaiResponse.statusText}`,
+        details: `API returned ${deepseekResponse.status} ${deepseekResponse.statusText}`,
         response: text
-      }, { status: openaiResponse.status })
+      }, { status: deepseekResponse.status })
     }
 
-    const analysis = await openaiResponse.json()
+    const analysis = await deepseekResponse.json()
     const summary = analysis.choices[0].message.content
-    console.log('✅ Got analysis from OpenAI')
+    console.log('✅ Got analysis from DeepSeek')
 
     // 3. Сохраняем в Supabase
     console.log('💾 Saving to Supabase')
