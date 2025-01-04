@@ -1,35 +1,104 @@
 'use client'
 
 import Link from 'next/link'
-import { HabitsList } from './components/habits/HabitsList'
+import { GlowingParticles } from './components/ui/GlowingParticles'
+import { RiMentalHealthLine, RiMoneyDollarCircleLine } from 'react-icons/ri'
+import { GiMuscleUp } from 'react-icons/gi'
+import { IoWaterOutline } from 'react-icons/io5'
+import { BsMoonStars } from 'react-icons/bs'
+import { MdOutlineContactPage, MdOutlineTaskAlt } from 'react-icons/md'
 
-export default function HomePage() {
+const habits = [
+  {
+    name: 'Медитация',
+    icon: RiMentalHealthLine,
+    href: '/habits/meditation',
+    progress: '120 / 120 мин',
+    color: 'from-purple-400/20 to-fuchsia-400/20'
+  },
+  {
+    name: 'Спорт',
+    icon: GiMuscleUp,
+    href: '/habits/sport',
+    color: 'from-emerald-400/20 to-green-400/20'
+  },
+  {
+    name: 'Вода',
+    icon: IoWaterOutline,
+    href: '/habits/water',
+    color: 'from-blue-400/20 to-cyan-400/20'
+  },
+  {
+    name: 'Сон',
+    icon: BsMoonStars,
+    href: '/habits/sleep',
+    color: 'from-indigo-400/20 to-violet-400/20'
+  },
+  {
+    name: 'Финансы',
+    icon: RiMoneyDollarCircleLine,
+    href: '/habits/finance',
+    color: 'from-amber-400/20 to-yellow-400/20'
+  },
+  {
+    name: 'Задачи',
+    icon: MdOutlineTaskAlt,
+    href: '/habits/tasks',
+    color: 'from-rose-400/20 to-pink-400/20'
+  }
+]
+
+export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white p-4 sm:p-6 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Навигация */}
-        <nav className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0 mb-8 sm:mb-12">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Главная</h1>
-          <Link 
+    <main className="min-h-screen bg-[#1A1A1A] text-[#E8D9C5] p-4 sm:p-8">
+      <GlowingParticles />
+      
+      <div className="max-w-6xl mx-auto">
+        {/* Верхняя панель */}
+        <div className="flex justify-end mb-12">
+          <Link
             href="/contacts"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg 
-              bg-gray-800/40 backdrop-blur-xl border border-gray-700/50
-              hover:bg-gray-700/40 transition-all duration-200"
+            className="flex items-center gap-2 px-6 py-3 text-lg rounded-xl bg-[#E8D9C5]/10 hover:bg-[#E8D9C5]/20 transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-            <span className="text-sm sm:text-base">Контакты</span>
+            <MdOutlineContactPage className="w-6 h-6" />
+            <span>Контакты</span>
           </Link>
-        </nav>
+        </div>
 
-        {/* Привычки */}
-        <section className="mb-8 sm:mb-12">
-          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-4 sm:mb-6">Главные привычки</h2>
-          <HabitsList />
-        </section>
+        {/* Сетка привычек */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {habits.map((habit) => {
+            const Icon = habit.icon
+            return (
+              <Link
+                key={habit.name}
+                href={habit.href}
+                className="group relative h-[180px] p-6 rounded-2xl bg-[#2A2A2A]/80 backdrop-blur-xl 
+                  border border-[#333333] overflow-hidden hover:border-[#E8D9C5]/20 transition-colors"
+              >
+                {/* Градиентный фон */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${habit.color} opacity-0 
+                  group-hover:opacity-100 transition-opacity duration-500`} 
+                />
+
+                {/* Контент */}
+                <div className="relative flex flex-col h-full">
+                  <Icon className="w-8 h-8 mb-4" />
+                  <h2 className="text-xl font-medium mb-2">{habit.name}</h2>
+                  {habit.progress && (
+                    <div className="mt-auto">
+                      <div className="h-1 bg-[#E8D9C5]/10 rounded-full overflow-hidden">
+                        <div className="h-full w-full bg-[#E8D9C5]/30 rounded-full" />
+                      </div>
+                      <p className="text-sm text-[#E8D9C5]/60 mt-2">{habit.progress}</p>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            )
+          })}
+        </div>
       </div>
-    </div>
+    </main>
   )
 }

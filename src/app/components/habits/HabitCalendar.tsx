@@ -1,20 +1,22 @@
+'use client'
+
 import { useState } from 'react'
 import { UniversalCalendarGrid } from './UniversalCalendarGrid'
 
-interface HabitCalendarProps {
-  mode: 'meditation' | 'sport' | 'water' | 'general'
-  sessions: any[] // Тип зависит от режима
+export interface HabitCalendarProps {
+  mode: 'meditation' | 'sport' | 'water' | 'sleep' | 'general'
+  sessions: any[]
 }
 
 export function HabitCalendar({ mode, sessions }: HabitCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentDate] = useState(new Date())
 
   return (
-    <div className="w-full space-y-4">
-      <UniversalCalendarGrid
+    <div className="w-full">
+      <UniversalCalendarGrid 
+        mode={mode}
         currentDate={currentDate}
         sessions={sessions}
-        mode={mode}
       />
     </div>
   )

@@ -1,82 +1,125 @@
 'use client'
 
 import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { RiMentalHealthLine, RiWaterFlashLine } from 'react-icons/ri'
+import { GiMuscleUp } from 'react-icons/gi'
+import { BsMoonStars } from 'react-icons/bs'
+
+interface HabitsListProps {
+  totalMeditationMinutes: number
+}
 
 const habits = [
   {
-    id: 'sport',
-    title: 'Спорт',
-    target: '1 час',
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M13 10V3L4 14h7v7l9-11h-7z"/>
-      </svg>
-    ),
-    gradient: 'from-orange-500 to-amber-500',
-    link: '/sport'
+    id: 'meditation',
+    name: 'Медитация',
+    icon: RiMentalHealthLine,
+    color: 'from-[#E8D9C5] to-[#C2A790]',
+    href: '/habits/meditation'
   },
   {
-    id: 'meditation',
-    title: 'Медитация',
-    target: '2 раза в день',
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-      </svg>
-    ),
-    gradient: 'from-purple-500 to-pink-500',
-    link: '/habits/meditation'
+    id: 'sport',
+    name: 'Спорт',
+    icon: GiMuscleUp,
+    color: 'from-[#D9E8D9] to-[#90C290]',
+    href: '/habits/sport'
   },
   {
     id: 'water',
-    title: 'Вода',
-    target: '3 литра',
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-      </svg>
-    ),
-    gradient: 'from-blue-500 to-cyan-500',
-    link: '/water'
+    name: 'Вода',
+    icon: RiWaterFlashLine,
+    color: 'from-[#D9E8E8] to-[#90C2C2]',
+    href: '/habits/water'
   },
   {
     id: 'sleep',
-    title: 'Режим сна',
-    target: '22:00 - 6:00',
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-      </svg>
-    ),
-    gradient: 'from-indigo-500 to-blue-500',
-    link: '/sleep'
+    name: 'Сон',
+    icon: BsMoonStars,
+    color: 'from-[#E8D9E8] to-[#C290C2]',
+    href: '/habits/sleep'
   }
 ]
 
-export function HabitsList() {
+export function HabitsList({ totalMeditationMinutes }: HabitsListProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {habits.map(habit => (
-        <Link 
-          key={habit.id}
-          href={habit.link}
-          className={`bg-gray-800/40 backdrop-blur-xl rounded-xl p-6 border border-gray-700/50
-            hover:shadow-[0_0_15px_rgba(99,102,241,0.1)] transition-all duration-300
-            flex flex-col items-center text-center group`}
-        >
-          <div className={`w-16 h-16 rounded-full mb-4 flex items-center justify-center
-            bg-gradient-to-r ${habit.gradient} bg-opacity-10 text-white
-            group-hover:scale-110 transition-transform duration-300`}>
-            {habit.icon}
-          </div>
-          <h3 className="text-xl font-semibold text-white mb-2">{habit.title}</h3>
-          <p className="text-gray-400">{habit.target}</p>
-        </Link>
-      ))}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {habits.map((habit) => {
+        const Icon = habit.icon
+        const showProgress = habit.id === 'meditation'
+        const progress = showProgress ? Math.min((totalMeditationMinutes / 120) * 100, 100) : 0
+
+        return (
+          <Link key={habit.id} href={habit.href}>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="relative p-6 rounded-xl bg-[#2A2A2A]/80 backdrop-blur-xl border border-[#333333]
+                hover:bg-[#2A2A2A] transition-all duration-300 overflow-hidden group"
+            >
+              {/* Фоновый градиент */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${habit.color} opacity-0 
+                group-hover:opacity-5 transition-opacity duration-300`} />
+              
+              {/* Блоб эффект */}
+              <motion.div
+                className="absolute -inset-2 opacity-0 group-hover:opacity-10"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 90, 0],
+                }}
+                transition={{
+                  duration: 8,
+                  repeat: Infinity,
+                  ease: "linear"
+                }}
+                style={{
+                  background: `radial-gradient(circle at 50% 50%, ${habit.color.split(' ')[1].replace('to-', '')}, transparent 70%)`
+                }}
+              />
+
+              {/* Контент */}
+              <div className="relative z-10 flex flex-col items-center gap-3">
+                <Icon className="w-8 h-8 text-[#E8D9C5]" />
+                <span className="text-sm font-light tracking-wide text-[#E8D9C5]">{habit.name}</span>
+
+                {/* Прогресс медитации */}
+                {showProgress && (
+                  <div className="w-full mt-2">
+                    <div className="relative h-1 bg-[#333333] rounded-full overflow-hidden">
+                      <motion.div
+                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#E8D9C5] to-[#C2A790]"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                      />
+                    </div>
+                    <div className="mt-1 text-[10px] text-[#E8D9C5]/60 text-center">
+                      {totalMeditationMinutes} / 120 мин
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Блики */}
+              <motion.div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100"
+                initial={false}
+                style={{
+                  background: 'radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.06) 0%, transparent 60%)'
+                }}
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  const x = ((e.clientX - rect.left) / rect.width) * 100
+                  const y = ((e.clientY - rect.top) / rect.height) * 100
+                  e.currentTarget.style.setProperty('--mouse-x', `${x}%`)
+                  e.currentTarget.style.setProperty('--mouse-y', `${y}%`)
+                }}
+              />
+            </motion.div>
+          </Link>
+        )
+      })}
     </div>
   )
 } 
