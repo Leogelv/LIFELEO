@@ -1,74 +1,44 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
 
-interface TelegramLayoutProps {
-  children: React.ReactNode
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: {
+        isExpanded: boolean
+        expand: () => void
+        MainButton: {
+          show: () => void
+          hide: () => void
+        }
+      }
+    }
+  }
 }
 
-export function TelegramLayout({ children }: TelegramLayoutProps) {
+export function TelegramLayout({ children }: { children: React.ReactNode }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [userId, setUserId] = useState<string>('375634162') // Дефолтный userId
 
   useEffect(() => {
+    // Проверяем наличие Telegram WebApp
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp
+      
+      // Проверяем, развернуто ли приложение
       setIsExpanded(tg.isExpanded)
       
-      tg.onEvent('viewportChanged', () => {
-        setIsExpanded(tg.isExpanded)
-      })
+      // Если не развернуто - разворачиваем
+      if (!tg.isExpanded) {
+        tg.expand()
+      }
     }
   }, [])
 
   return (
-    <main className={`min-h-screen relative overflow-hidden ${isExpanded ? 'pt-[100px]' : ''}`}>
-      {/* Анимированные градиенты на фоне */}
-      <div className="fixed inset-0 overflow-hidden">
-        <motion.div
-          animate={{
-            x: ['-25%', '25%', '-25%'],
-            y: ['-25%', '15%', '-25%'],
-            scale: [1, 1.2, 1]
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-r from-orange-500/20 to-rose-500/20 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            x: ['25%', '-25%', '25%'],
-            y: ['15%', '-25%', '15%'],
-            scale: [1.2, 1, 1.2]
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-l from-purple-500/20 to-blue-500/20 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            x: ['-15%', '25%', '-15%'],
-            y: ['25%', '-15%', '25%'],
-            scale: [1, 1.1, 1]
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-bl from-cyan-500/20 to-blue-500/20 rounded-full blur-3xl"
-        />
-      </div>
-
-      <div className="relative z-10">
-        {children}
-      </div>
-    </main>
+    <div className={`min-h-screen bg-gray-900 text-white ${isExpanded ? 'pt-[100px]' : ''}`}>
+      {children}
+    </div>
   )
 } 
