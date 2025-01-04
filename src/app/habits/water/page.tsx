@@ -1,107 +1,60 @@
 'use client'
 
 import { useState } from 'react'
-import { WaterCalendarGrid } from '@/app/components/habits/WaterCalendarGrid'
-import { useRouter } from 'next/navigation'
-import { Icon } from '@iconify/react'
+import { MdArrowBack } from 'react-icons/md'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { useWaterSessions } from '@/app/hooks/useWaterSessions'
-
-function WaterInput({ onAdd }: { onAdd: (amount: number) => void }) {
-  const [amount, setAmount] = useState(250)
-
-  return (
-    <div className="flex flex-col gap-4 p-6 rounded-2xl bg-[#2A2A2A]/50 backdrop-blur-lg mb-8">
-      <div className="flex items-center gap-4">
-        <Icon icon="solar:glass-water-bold" className="w-8 h-8 text-blue-400" />
-        <h3 className="text-xl font-light text-[#E8D9C5]">Добавить воду</h3>
-      </div>
-      
-      <div className="flex items-center gap-4">
-        <motion.button 
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setAmount(prev => Math.max(50, prev - 50))}
-          className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors"
-        >
-          <Icon icon="solar:minus-circle-outline" className="w-6 h-6 text-[#E8D9C5]" />
-        </motion.button>
-        
-        <div className="flex-1">
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(Math.max(0, parseInt(e.target.value) || 0))}
-            className="w-full px-4 py-2 text-center text-xl bg-[#2A2A2A] text-[#E8D9C5] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <div className="text-center mt-1 text-sm text-[#E8D9C5]/60">мл</div>
-        </div>
-
-        <motion.button 
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setAmount(prev => prev + 50)}
-          className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors"
-        >
-          <Icon icon="solar:add-circle-outline" className="w-6 h-6 text-[#E8D9C5]" />
-        </motion.button>
-      </div>
-
-      <div className="flex gap-2">
-        {[250, 500, 750].map(preset => (
-          <motion.button
-            key={preset}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setAmount(preset)}
-            className={`flex-1 py-2 rounded-lg transition-colors ${
-              amount === preset 
-                ? 'bg-blue-500/20 border border-blue-500/50' 
-                : 'bg-[#2A2A2A] hover:bg-[#333333]'
-            }`}
-          >
-            {preset} мл
-          </motion.button>
-        ))}
-      </div>
-
-      <motion.button
-        whileTap={{ scale: 0.95 }}
-        onClick={() => onAdd(amount)}
-        className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 transition-colors font-medium text-white"
-      >
-        Добавить
-      </motion.button>
-    </div>
-  )
-}
+import { UniversalCalendarGrid } from '@/app/components/habits/UniversalCalendarGrid'
+import { TelegramLayout } from '@/app/components/layouts/TelegramLayout'
 
 export default function WaterPage() {
-  const router = useRouter()
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const { sessions, addWater, isLoading } = useWaterSessions()
-
   return (
-    <div className="min-h-screen bg-[#1A1A1A] text-white p-4 md:p-8">
-      {/* Хедер */}
-      <div className="flex items-center gap-4 mb-8">
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={() => router.back()}
-          className="p-2 rounded-lg hover:bg-[#E8D9C5]/5 transition-colors"
+    <TelegramLayout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="py-6"
         >
-          <Icon icon="solar:arrow-left-outline" className="w-6 h-6 text-[#E8D9C5]/60" />
-        </motion.button>
-        <h1 className="text-2xl font-light text-[#E8D9C5]">Вода</h1>
-      </div>
+          <div className="flex items-center justify-between">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link 
+                href="/"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl 
+                  bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                <MdArrowBack className="w-6 h-6" />
+                <span>Назад</span>
+              </Link>
+            </motion.div>
+            <motion.div 
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              className="text-center"
+            >
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                Водный баланс
+              </h1>
+            </motion.div>
+            <div className="w-[88px]" />
+          </div>
+        </motion.div>
 
-      {/* Ввод воды */}
-      <WaterInput onAdd={addWater} />
-
-      {/* Календарь */}
-      <div className="max-w-4xl mx-auto">
-        <WaterCalendarGrid 
-          currentDate={currentDate}
-          sessions={sessions}
-        />
+        {/* Calendar Grid */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="space-y-6"
+        >
+          <UniversalCalendarGrid
+            currentDate={new Date()}
+            sessions={[]}
+            mode="water"
+          />
+        </motion.div>
       </div>
-    </div>
+    </TelegramLayout>
   )
 } 
