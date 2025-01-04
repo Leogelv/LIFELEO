@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import { Contact } from '@/types/contacts'
+import Link from 'next/link'
 
 // Массив крутых градиентов
 const gradients = [
@@ -25,7 +26,6 @@ export function ContactList() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [showAnalyzedOnly, setShowAnalyzedOnly] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
@@ -138,8 +138,8 @@ export function ContactList() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => router.push(`/contacts/${contact.user_id}`)}
+                  <Link 
+                    href={`/contacts/${contact.user_id}`}
                     className="inline-flex items-center px-4 py-2 rounded-full 
                       bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-medium
                       transform hover:scale-105 transition-all duration-200 hover:shadow-lg
@@ -147,7 +147,7 @@ export function ContactList() {
                       focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900"
                   >
                     Открыть карточку
-                  </button>
+                  </Link>
                 </td>
               </tr>
             ))}
