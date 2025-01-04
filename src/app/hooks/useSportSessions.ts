@@ -12,8 +12,6 @@ interface SportSession {
   duration: number
   intensity: string
   notes?: string
-  created_at?: string
-  updated_at?: string
 }
 
 export function useSportSessions() {
@@ -31,7 +29,7 @@ export function useSportSessions() {
       console.log('🔍 Fetching sport sessions for user:', userId)
       
       const { data, error } = await supabase
-        .from('sport_tracking')
+        .from('sport_sessions')
         .select('*')
         .eq('telegram_id', userId)
         .order('date', { ascending: false })
@@ -71,7 +69,7 @@ export function useSportSessions() {
       console.log('🏃‍♂️ Adding sport entry:', sportEntry)
       
       const { error } = await supabase
-        .from('sport_tracking')
+        .from('sport_sessions')
         .insert([sportEntry])
 
       if (error) throw error

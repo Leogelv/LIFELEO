@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { motion } from 'framer-motion'
 
@@ -17,6 +17,8 @@ interface WaterCalendarGridProps {
   currentDate: Date
   sessions: WaterSession[]
 }
+
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 export function WaterCalendarGrid({ currentDate, sessions }: WaterCalendarGridProps) {
   // Получаем все дни текущего месяца
@@ -34,6 +36,12 @@ export function WaterCalendarGrid({ currentDate, sessions }: WaterCalendarGridPr
     
     const totalAmount = daySessions.reduce((sum, session) => sum + session.amount, 0)
     return totalAmount
+  }
+
+  // Получаем день недели (0-6, где 0 - воскресенье)
+  const getWeekdayIndex = (date: Date) => {
+    const day = getDay(date)
+    return day === 0 ? 6 : day - 1 // Конвертируем в формат Пн-Вс (0-6)
   }
 
   // Рендерим воду с волнами
@@ -97,7 +105,7 @@ export function WaterCalendarGrid({ currentDate, sessions }: WaterCalendarGridPr
           />
         </motion.div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg font-light text-[#E8D9C5]" suppressHydrationWarning>
+          <span className="text-base md:text-lg font-light text-[#E8D9C5]" suppressHydrationWarning>
             {liters.toFixed(1)}л
           </span>
         </div>
@@ -108,24 +116,16 @@ export function WaterCalendarGrid({ currentDate, sessions }: WaterCalendarGridPr
   return (
     <div className="w-full">
       {/* Месяц и год */}
-      <h2 className="text-xl font-light text-[#E8D9C5] mb-8" suppressHydrationWarning>
+      <h2 className="text-xl font-light text-[#E8D9C5] mb-4 md:mb-8" suppressHydrationWarning>
         {format(currentDate, 'LLLL yyyy', { locale: ru })}
       </h2>
 
-      {/* Дни недели */}
-      <div className="grid grid-cols-7 gap-4 mb-4">
-        {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(day => (
-          <div key={day} className="h-12 flex items-center justify-center">
-            <span className="text-sm font-light text-[#E8D9C5]/60">{day}</span>
-          </div>
-        ))}
-      </div>
-
       {/* Сетка дней */}
-      <div className="grid grid-cols-7 gap-4">
+      <div className="grid grid-cols-3 md:grid-cols-7 gap-2 md:gap-4">
         {days.map(day => {
           const waterAmount = getWaterAmount(day)
           const isToday = isSameDay(day, new Date())
+          const weekdayIndex = getWeekdayIndex(day)
 
           return (
             <motion.div
@@ -144,15 +144,22 @@ export function WaterCalendarGrid({ currentDate, sessions }: WaterCalendarGridPr
               `}>
                 {/* Число */}
                 <div className={`
-                  absolute top-3 left-3 transition-colors duration-300
+                  absolute top-2 left-2 md:top-3 md:left-3 transition-colors duration-300
                   ${isToday ? 'text-[#E8D9C5]' : 'text-[#E8D9C5]/60'}
                 `} suppressHydrationWarning>
-                  <span className="text-lg font-light">{format(day, 'd')}</span>
+                  <span className="text-sm md:text-lg font-light">{format(day, 'd')}</span>
+                </div>
+
+                {/* День недели */}
+                <div className="absolute top-2 right-2 md:top-3 md:right-3">
+                  <span className="text-xs md:text-sm font-light text-[#E8D9C5]/40">
+                    {WEEKDAYS[weekdayIndex]}
+                  </span>
                 </div>
 
                 {/* Вода */}
                 {waterAmount && (
-                  <div className="absolute inset-0 pt-12">
+                  <div className="absolute inset-0 pt-8 md:pt-12">
                     {renderWater(waterAmount)}
                   </div>
                 )}
