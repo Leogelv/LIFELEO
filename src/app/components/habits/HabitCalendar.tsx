@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { UniversalCalendarGrid } from './UniversalCalendarGrid'
+import { UniversalCalendarGrid, CalendarMode } from './UniversalCalendarGrid'
 
 export interface HabitCalendarProps {
-  mode: 'meditation' | 'sport' | 'water' | 'sleep' | 'general'
+  mode: CalendarMode
   sessions: any[]
 }
 
