@@ -93,21 +93,24 @@ export function UniversalCalendarGrid({
             damping: 20,
             mass: 1
           }}
-          className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-blue-500/30 to-cyan-500/20 backdrop-blur-sm"
+          className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-blue-500/40 to-cyan-400/30 backdrop-blur-sm"
         >
           <motion.div 
             className="absolute inset-0"
             style={{ 
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 88.7'%3E%3Cpath d='M800 56.9c-155.5 0-204.9-50-405.5-49.9-200 0-250 49.9-394.5 49.9v31.8h800v-.2-31.6z' fill='%23E8D9C5'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' opacity='.25' fill='%23E8D9C5'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'repeat-x',
-              backgroundPosition: '0 bottom',
-              backgroundSize: '200px auto'
+              backgroundSize: '100% 30%',
+              backgroundPosition: 'center bottom',
+              height: '100%',
+              width: '200%',
+              left: '-50%'
             }}
             animate={{ 
               x: ["0%", "-50%"]
             }}
             transition={{ 
-              duration: 5,
+              duration: 20,
               ease: "linear",
               repeat: Infinity
             }}
@@ -115,17 +118,19 @@ export function UniversalCalendarGrid({
           <motion.div 
             className="absolute inset-0"
             style={{ 
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 88.7'%3E%3Cpath d='M800 56.9c-155.5 0-204.9-50-405.5-49.9-200 0-250 49.9-394.5 49.9v31.8h800v-.2-31.6z' fill='%23E8D9C5'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' opacity='.15' fill='%23E8D9C5'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'repeat-x',
-              backgroundPosition: '0 bottom',
-              backgroundSize: '160px auto',
-              opacity: 0.5
+              backgroundSize: '100% 20%',
+              backgroundPosition: 'center bottom',
+              height: '100%',
+              width: '200%',
+              left: '-50%'
             }}
             animate={{ 
               x: ["-50%", "0%"]
             }}
             transition={{ 
-              duration: 7,
+              duration: 15,
               ease: "linear",
               repeat: Infinity
             }}
