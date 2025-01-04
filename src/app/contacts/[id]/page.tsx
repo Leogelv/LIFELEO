@@ -8,15 +8,10 @@ import { AnalysisCard } from '@/app/components/analysis/AnalysisCard'
 import { MessageHistory } from '@/app/components/analysis/MessageHistory'
 import { ParticipantInfo } from '@/app/components/analysis/ParticipantInfo'
 import { toast } from 'react-hot-toast'
-import { Link } from 'react-router-dom'
-import { ArrowLeft, Lightbulb, MessageSquare, User } from 'lucide-react'
 
 export default function ContactPage({ params }: { params: { id: string } }) {
   const [contact, setContact] = useState<Contact | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [messages, setMessages] = useState<any[]>([])
   const router = useRouter()
   const supabase = createClient()
 
@@ -66,112 +61,138 @@ export default function ContactPage({ params }: { params: { id: string } }) {
     }
   }
 
-  const analyzeHistory = async () => {
+  async function analyzeHistory() {
     try {
-      setLoading(true)
-      setError(null)
+      setAnalyzing(true)
       
-      const response = await fetch(`/api/contacts?chat_id=${contact.user_id}`)
-      const text = await response.text()
-      
-      console.log('Response:', {
-        status: response.status,
-        text: text
+      // Отправляем на анализ через наш новый API роут
+      const response = await fetch('/api/contacts/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: params.id })
       })
-      
+
       if (!response.ok) {
-        setError(`Error ${response.status}: ${text}`)
-        return
-      }
-      
-      const data = JSON.parse(text)
-      if (!data.success) {
-        setError(`API Error: ${JSON.stringify(data)}`)
-        return
+        const error = await response.text()
+        console.error('Failed to analyze:', error)
+        throw new Error('Failed to analyze')
       }
 
-      setMessages(data.messages)
-    } catch (e) {
-      console.error('Error:', e)
-      setError(`Error: ${e instanceof Error ? e.message : String(e)}`)
+      const result = await response.json()
+
+      // Обновляем локальное состояние
+      setContact(current => current ? {
+        ...current,
+        history: result.history,
+        summary: result.summary
+      } : null)
+
+      toast.success('Анализ успешно завершен!')
+
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Не удалось проанализировать историю')
     } finally {
-      setLoading(false)
+      setAnalyzing(false)
     }
   }
 
   if (!contact) return <div>Loading...</div>
 
   return (
-    <div className="p-4">
-      <Link href="/contacts" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4">
-        <ArrowLeft className="w-4 h-4" />
-        Назад
-      </Link>
-
-      <div className="flex items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold">{contact.first_name}</h1>
-        <p className="text-gray-500">{contact.username}</p>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 p-6">
+      {/* Header с крутым градиентным бордером */}
+      <div className="relative mb-8 p-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
+        <div className="flex items-center justify-between p-4 bg-gray-900 rounded-2xl">
+          <button 
+            onClick={() => router.back()}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 
+              text-gray-300 hover:text-white transition-all duration-200"
+          >
+            <span>←</span>
+            <span>Назад</span>
+          </button>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 
+            text-transparent bg-clip-text">
+            {contact.first_name} {contact.last_name}
+          </h1>
+          <div className="w-24" />
+        </div>
       </div>
 
       <div className="space-y-8">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Анализ диалога</h2>
-          <button
-            onClick={analyzeHistory}
-            disabled={loading}
-            className={`px-6 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium 
-              hover:from-purple-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
-              flex items-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <Lightbulb className="w-5 h-5" />
-            Анализировать диалог
-          </button>
-          
-          {error && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              <pre className="whitespace-pre-wrap">{error}</pre>
-            </div>
-          )}
-          
-          {!messages.length && !error && !loading && (
-            <div className="mt-8 p-8 bg-gray-50 border border-gray-100 rounded-lg text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Lightbulb className="w-8 h-8 text-gray-400" />
+        {/* Анализ диалога */}
+        <div className="relative">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Анализ диалога</h2>
+            <button
+              onClick={analyzeHistory}
+              disabled={analyzing}
+              className="relative group px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500
+                text-white font-medium transition-all duration-300 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]
+                disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                {analyzing ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                    </svg>
+                    <span>Анализируем...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                    <span>Анализировать диалог</span>
+                  </>
+                )}
+              </span>
+            </button>
+          </div>
+
+          {contact.summary ? (
+            <AnalysisCard analysis={contact.summary} />
+          ) : (
+            <div className="bg-gray-800/40 backdrop-blur-xl rounded-xl p-8 border border-gray-700/50 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full 
+                bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 mb-4">
+                <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
               </div>
-              <p className="text-gray-600">
+              <p className="text-gray-400 text-lg">
                 Нажмите кнопку "Анализировать диалог" чтобы получить анализ переписки
               </p>
             </div>
           )}
         </div>
 
-        <div>
-          <h2 className="text-xl font-semibold mb-4">История сообщений</h2>
-          {messages.length > 0 ? (
-            <div className="space-y-4">
-              {messages.map((message, index) => (
-                <div key={index} className="p-4 bg-white border border-gray-200 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="font-medium">{message.from_user?.first_name || 'Unknown'}</span>
-                    <span className="text-sm text-gray-500">
-                      {new Date(message.date).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-gray-700">{message.text}</p>
+        {/* История сообщений */}
+        <div className="relative">
+          <h2 className="text-2xl font-bold text-white mb-6">История сообщений</h2>
+          
+          <div className="bg-gray-800/40 backdrop-blur-xl rounded-xl p-6 border border-gray-700/50">
+            {contact.history?.raw?.messages ? (
+              <MessageHistory messages={contact.history.raw.messages} />
+            ) : (
+              <div className="text-center py-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full 
+                  bg-gradient-to-r from-gray-700/30 to-gray-600/30 border border-gray-600/30 mb-4">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                  </svg>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 bg-gray-50 border border-gray-100 rounded-lg text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="w-8 h-8 text-gray-400" />
+                <p className="text-gray-400 text-lg">
+                  История сообщений появится после анализа диалога
+                </p>
               </div>
-              <p className="text-gray-600">
-                История сообщений появится после анализа диалога
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
