@@ -11,12 +11,15 @@ const DEFAULT_USER_ID = 375634162
 
 export default function Home() {
   const [userId, setUserId] = useState<number>(DEFAULT_USER_ID)
+  const [userData, setUserData] = useState<any>(null)
 
   useEffect(() => {
-    // Получаем ID пользователя из Telegram WebApp
+    // Получаем данные пользователя из Telegram WebApp
     const webApp = (window as any).Telegram?.WebApp
-    if (webApp?.initDataUnsafe?.user?.id) {
+    if (webApp?.initDataUnsafe?.user) {
       setUserId(webApp.initDataUnsafe.user.id)
+      setUserData(webApp.initDataUnsafe.user)
+      console.log('Got Telegram user:', webApp.initDataUnsafe.user)
     } else {
       console.log('Using default user ID:', DEFAULT_USER_ID)
     }
@@ -71,13 +74,24 @@ export default function Home() {
         <div className="relative z-10 max-w-7xl mx-auto">
           {/* Хедер */}
           <div className="flex justify-between items-center mb-12">
-            <h1 className="text-4xl font-light text-[#E8D9C5]">Панель Смыслов</h1>
+            <div className="flex items-center gap-4">
+              {userData?.photo_url && (
+                <img 
+                  src={userData.photo_url} 
+                  alt="Avatar" 
+                  className="w-12 h-12 rounded-full border-2 border-[#E8D9C5]/20"
+                />
+              )}
+              <h1 className="text-4xl font-light text-[#E8D9C5]">Панель Смыслов</h1>
+            </div>
             <Link 
               href="/contacts" 
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E8D9C5]/10 bg-[#E8D9C5]/5 backdrop-blur-sm hover:border-[#E8D9C5]/20 transition-all duration-500"
             >
               <Icon icon="solar:users-group-rounded-outline" className="w-5 h-5 text-[#E8D9C5]" />
-              <span className="text-[#E8D9C5]">Контакты</span>
+              <span className="text-[#E8D9C5]">
+                {userData?.username ? `TG: @${userData.username}` : 'Контакты'}
+              </span>
             </Link>
           </div>
 
