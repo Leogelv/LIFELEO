@@ -6,27 +6,62 @@ import { HabitCard } from './components/habits/HabitCard'
 import { Icon } from '@iconify/react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import TelegramScript from './components/TelegramScript'
 
 const DEFAULT_USER_ID = 375634162
+
+// Типизация для Telegram WebApp
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: {
+        ready: () => void;
+        expand: () => void;
+        initDataUnsafe: {
+          user?: {
+            id: number;
+            first_name: string;
+            last_name?: string;
+            username?: string;
+            photo_url?: string;
+          };
+        };
+        HapticFeedback: {
+          impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
+        };
+      };
+    };
+  }
+}
 
 export default function Home() {
   const [userId, setUserId] = useState<number>(DEFAULT_USER_ID)
   const [userData, setUserData] = useState<any>(null)
 
   useEffect(() => {
-    // Получаем данные пользователя из Telegram WebApp
-    const webApp = (window as any).Telegram?.WebApp
-    if (webApp?.initDataUnsafe?.user) {
-      setUserId(webApp.initDataUnsafe.user.id)
-      setUserData(webApp.initDataUnsafe.user)
-      console.log('Got Telegram user:', webApp.initDataUnsafe.user)
-    } else {
-      console.log('Using default user ID:', DEFAULT_USER_ID)
+    // Инициализация Telegram Mini App
+    if (window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp
+      tg.ready()
+      tg.expand()
+
+      // Получаем данные пользователя
+      if (tg.initDataUnsafe?.user) {
+        setUserId(tg.initDataUnsafe.user.id)
+        setUserData(tg.initDataUnsafe.user)
+        console.log('Got Telegram user:', tg.initDataUnsafe.user)
+
+        // Хаптик фидбек при загрузке
+        tg.HapticFeedback.impactOccurred('medium')
+      } else {
+        console.log('Using default user ID:', DEFAULT_USER_ID)
+      }
     }
   }, [])
 
   return (
     <UserIdProvider value={userId}>
+      <TelegramScript />
       <main className="min-h-screen bg-[#1A1A1A] text-white p-4 md:p-8">
         {/* Анимированные градиенты на фоне */}
         <div className="fixed inset-0 overflow-hidden">
