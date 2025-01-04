@@ -12,10 +12,11 @@ export function TelegramLayout({ children }: TelegramLayoutProps) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      setIsExpanded(window.Telegram.WebApp.isExpanded)
+      const tg = window.Telegram.WebApp
+      setIsExpanded(tg.isExpanded)
       
-      window.Telegram.WebApp.onEvent('viewportChanged', () => {
-        setIsExpanded(window.Telegram.WebApp.isExpanded)
+      tg.onEvent('viewportChanged', () => {
+        setIsExpanded(tg.isExpanded)
       })
     }
   }, [])
