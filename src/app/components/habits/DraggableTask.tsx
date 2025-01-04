@@ -45,7 +45,7 @@ export function DraggableTask({ task, onMove, onDrag, onDragEnd }: DraggableTask
       }}
       className={`
         flex items-center gap-1 p-1.5 rounded-lg backdrop-blur-sm border
-        cursor-move touch-none select-none text-xs
+        cursor-move touch-none select-none text-[10px] sm:text-xs
         ${task.done 
           ? 'text-[#E8D9C5]/40 line-through border-[#E8D9C5]/5 bg-gradient-to-r from-[#E8D9C5]/[0.02] to-[#E8D9C5]/[0.05]' 
           : isOverdue
@@ -54,7 +54,7 @@ export function DraggableTask({ task, onMove, onDrag, onDragEnd }: DraggableTask
         }
       `}
     >
-      <Icon icon="solar:minimalistic-dots-vertical-outline" className="w-3 h-3 flex-shrink-0" />
+      <Icon icon="solar:minimalistic-dots-vertical-outline" className="w-2 h-2 sm:w-3 sm:h-3 flex-shrink-0" />
       <span className="truncate" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
         {task.name}
       </span>
