@@ -45,3 +45,30 @@ body {
 .animate-spin-slow {
   animation: spin-slow 10s linear infinite;
 }
+
+/* Scrollbar Styles */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Calendar Cell Styles */
+.calendar-cell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.calendar-cell-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}

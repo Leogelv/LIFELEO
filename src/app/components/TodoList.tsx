@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 import { UserIdContext } from '@/app/page'
 import { useContext } from 'react'
 import { IoTimeOutline } from 'react-icons/io5'
-import { MdOutlineCalendarToday } from 'react-icons/md'
+import { MdOutlineCalendarToday, MdCheck, MdOutlineAccessTime, MdDelete } from 'react-icons/md'
 
 type Todo = {
   id: string
@@ -21,10 +21,27 @@ type Todo = {
   telegram_id: number
 }
 
-export default function TodoList({ initialTodos }: { initialTodos: Todo[] }) {
+interface TodoListProps {
+  initialTodos: Todo[]
+  onTodosChange?: (todos: Todo[]) => void
+}
+
+export default function TodoList({ initialTodos, onTodosChange }: TodoListProps) {
   const [todos, setTodos] = useState<Todo[]>(initialTodos)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({})
   const userId = useContext(UserIdContext)
+
+  const setLoadingState = (id: string, state: boolean) => {
+    setLoadingStates(prev => ({ ...prev, [id]: state }))
+  }
+
+  // Обновляем родительский компонент при изменении списка задач
+  useEffect(() => {
+    if (onTodosChange) {
+      onTodosChange(todos)
+    }
+  }, [todos, onTodosChange])
 
   useEffect(() => {
     // Загружаем существующие задачи при монтировании
@@ -89,15 +106,101 @@ export default function TodoList({ initialTodos }: { initialTodos: Todo[] }) {
     }
   }, [userId])
 
-  const handleDelete = async (id: string) => {
+  const handleToggle = async (id: string) => {
+    setLoadingState(id, true)
     try {
+      const todo = todos.find(t => t.id === id)
+      if (!todo) return
+
+      // Оптимистичное обновление
+      setTodos(current => 
+        current.map(t => t.id === id ? { ...t, done: !t.done } : t)
+      )
+
+      const { error } = await supabase
+        .from('todos')
+        .update({ done: !todo.done })
+        .eq('id', id)
+        .eq('telegram_id', userId)
+      
+      if (error) {
+        // Откатываем изменения при ошибке
+        setTodos(current => 
+          current.map(t => t.id === id ? { ...t, done: todo.done } : t)
+        )
+        console.error('Error updating todo:', error)
+        toast.error('Не удалось обновить статус задачи')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Что-то пошло не так')
+    } finally {
+      setLoadingState(id, false)
+    }
+  }
+
+  const handleMove = async (id: string, type: 'plus2h' | 'plus1d') => {
+    setLoadingState(id, true)
+    try {
+      const todo = todos.find(t => t.id === id)
+      if (!todo) return
+
+      const currentDeadline = new Date(todo.deadline)
+      const newDeadline = type === 'plus2h' 
+        ? addHours(currentDeadline, 2)
+        : addDays(currentDeadline, 1)
+
+      // Оптимистичное обновление
+      setTodos(current => 
+        current.map(t => t.id === id ? { ...t, deadline: newDeadline.toISOString() } : t)
+      )
+
+      const { error } = await supabase
+        .from('todos')
+        .update({ deadline: newDeadline.toISOString() })
+        .eq('id', id)
+        .eq('telegram_id', userId)
+      
+      if (error) {
+        // Откатываем изменения при ошибке
+        setTodos(current => 
+          current.map(t => t.id === id ? { ...t, deadline: todo.deadline } : t)
+        )
+        console.error('Error moving todo:', error)
+        toast.error('Не удалось перенести задачу')
+      } else {
+        toast.success(
+          type === 'plus2h' 
+            ? 'Задача перенесена на 2 часа вперед'
+            : 'Задача перенесена на завтра'
+        )
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Что-то пошло не так')
+    } finally {
+      setLoadingState(id, false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    setLoadingState(id, true)
+    try {
+      // Оптимистичное обновление
+      const todoToDelete = todos.find(t => t.id === id)
+      setTodos(current => current.filter(t => t.id !== id))
+
       const { error } = await supabase
         .from('todos')
         .delete()
         .eq('id', id)
         .eq('telegram_id', userId)
-
+      
       if (error) {
+        // Откатываем изменения при ошибке
+        if (todoToDelete) {
+          setTodos(current => [...current, todoToDelete])
+        }
         console.error('Error deleting todo:', error)
         toast.error('Не удалось удалить задачу')
       } else {
@@ -106,33 +209,8 @@ export default function TodoList({ initialTodos }: { initialTodos: Todo[] }) {
     } catch (error) {
       console.error('Error:', error)
       toast.error('Что-то пошло не так')
-    }
-  }
-
-  const handlePostpone = async (id: string, type: 'hours' | 'days') => {
-    try {
-      const todo = todos.find(t => t.id === id)
-      if (!todo) return
-
-      const newDeadline = type === 'hours' 
-        ? addHours(new Date(todo.deadline), 2)
-        : addDays(new Date(todo.deadline), 1)
-
-      const { error } = await supabase
-        .from('todos')
-        .update({ deadline: newDeadline.toISOString() })
-        .eq('id', id)
-        .eq('telegram_id', userId)
-
-      if (error) {
-        console.error('Error postponing todo:', error)
-        toast.error('Не удалось перенести задачу')
-      } else {
-        toast.success(type === 'hours' ? 'Перенесено на 2 часа' : 'Перенесено на завтра')
-      }
-    } catch (error) {
-      console.error('Error:', error)
-      toast.error('Что-то пошло не так')
+    } finally {
+      setLoadingState(id, false)
     }
   }
 
@@ -145,143 +223,119 @@ export default function TodoList({ initialTodos }: { initialTodos: Todo[] }) {
   }
 
   return (
-    <AnimatePresence mode="popLayout">
-      {todos.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-12 text-white/40"
-        >
-          Нет задач. Добавьте новую задачу выше ☝️
-        </motion.div>
-      ) : (
-        todos.map((todo) => {
+    <div className="flex-1">
+      <div className="flex gap-4 pb-4 snap-x snap-mandatory overflow-x-auto">
+        {todos.map((todo) => {
           const deadlineDate = new Date(todo.deadline)
           const isOverdue = !todo.done && isAfter(new Date(), deadlineDate)
+          const isLoading = loadingStates[todo.id]
 
           return (
             <motion.div
               key={todo.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: -100 }}
-              transition={{ duration: 0.2 }}
-              className="group relative mb-3"
-            >
-              <div className={`
-                flex items-center gap-4 p-4 rounded-xl backdrop-blur-lg
-                border transition-all duration-300
-                ${isOverdue 
-                  ? 'border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20' 
-                  : todo.done
-                    ? 'border-white/10 bg-white/5 hover:bg-white/10'
-                    : 'border-white/10 bg-gradient-to-r from-rose-400/10 to-pink-400/10 hover:from-rose-400/20 hover:to-pink-400/20'
+              exit={{ opacity: 0, y: -20 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`
+                flex flex-col gap-4 p-6 rounded-2xl backdrop-blur-sm border snap-start
+                min-w-[280px] max-w-[280px] transition-all duration-300
+                ${isLoading ? 'opacity-50' : ''}
+                ${todo.done 
+                  ? 'text-white/40 line-through border-white/5 bg-white/5' 
+                  : isOverdue
+                    ? 'text-rose-400 border-rose-500/30 bg-rose-500/10'
+                    : 'text-white/90 border-white/10 bg-white/5'
                 }
-              `}>
-                {/* Чекбокс */}
-                <button
-                  onClick={async () => {
-                    try {
-                      const { error } = await supabase
-                        .from('todos')
-                        .update({ done: !todo.done })
-                        .eq('id', todo.id)
-                        .eq('telegram_id', userId)
-                      
-                      if (error) {
-                        console.error('Error updating todo:', error)
-                        toast.error('Не удалось обновить статус задачи')
-                      }
-                    } catch (error) {
-                      console.error('Error:', error)
-                      toast.error('Что-то пошло не так')
-                    }
-                  }}
-                  className="relative w-6 h-6 flex-shrink-0"
-                >
-                  <div className={`
-                    absolute inset-0 rounded-full border-2 transition-colors duration-200
+              `}
+            >
+              {/* Task Name */}
+              <div className="flex items-start gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleToggle(todo.id)}
+                  disabled={isLoading}
+                  className={`
+                    flex items-center justify-center w-6 h-6 rounded-lg border transition-all duration-300
                     ${todo.done 
-                      ? 'border-rose-400 bg-rose-400' 
-                      : isOverdue
-                        ? 'border-rose-500 group-hover:border-rose-500'
-                        : 'border-white/20 group-hover:border-rose-400/50'
+                      ? 'bg-emerald-500/20 border-emerald-500/30' 
+                      : 'border-white/20 hover:border-white/40'
                     }
-                  `} />
-                  <BsCheckCircleFill 
-                    className={`
-                      absolute inset-0 w-6 h-6 text-white transform transition-all duration-200
-                      ${todo.done ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}
-                    `}
-                  />
-                </button>
-
-                {/* Название задачи */}
-                <span className={`
-                  flex-1 transition-all duration-200
-                  ${todo.done ? 'text-white/40 line-through' : isOverdue ? 'text-rose-500' : 'text-white'}
-                `}>
-                  {todo.name}
-                </span>
-
-                {/* Дедлайн и быстрые действия */}
-                <div className="flex items-center gap-3">
-                  {/* Кнопки переноса */}
-                  {!todo.done && (
-                    <>
-                      <button
-                        onClick={() => handlePostpone(todo.id, 'hours')}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg 
-                          bg-white/5 hover:bg-white/10 text-white/60 hover:text-white 
-                          transition-all duration-200"
-                      >
-                        <IoTimeOutline className="w-4 h-4" />
-                        <span className="text-xs">+2ч</span>
-                      </button>
-                      <button
-                        onClick={() => handlePostpone(todo.id, 'days')}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg 
-                          bg-white/5 hover:bg-white/10 text-white/60 hover:text-white 
-                          transition-all duration-200"
-                      >
-                        <MdOutlineCalendarToday className="w-4 h-4" />
-                        <span className="text-xs">+1д</span>
-                      </button>
-                    </>
+                    ${isLoading ? 'animate-pulse' : ''}
+                  `}
+                >
+                  {todo.done && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                    >
+                      <MdCheck className="w-4 h-4 text-emerald-400" />
+                    </motion.div>
                   )}
+                </motion.button>
+                <span className="flex-1 text-lg">{todo.name}</span>
+              </div>
 
-                  {/* Дедлайн */}
-                  <div className="flex flex-col items-end text-xs min-w-[100px]">
-                    <span className={`
-                      ${isOverdue ? 'text-rose-500' : 'text-rose-400/80'}
-                    `}>
-                      {format(deadlineDate, 'd MMM HH:mm', { locale: ru })}
-                    </span>
-                    <span className={`
-                      ${isOverdue ? 'text-rose-500/60' : 'text-white/40'}
-                    `}>
-                      {isOverdue 
-                        ? `Просрочено на ${formatDistanceToNow(deadlineDate, { locale: ru })}`
-                        : `Через ${formatDistanceToNow(deadlineDate, { locale: ru })}`
-                      }
-                    </span>
-                  </div>
+              {/* Deadline */}
+              <div className="flex items-center gap-2 text-sm text-white/60">
+                <MdOutlineCalendarToday className="w-4 h-4" />
+                <span>{format(new Date(todo.deadline), 'd MMMM, HH:mm', { locale: ru })}</span>
+              </div>
 
-                  {/* Кнопка удаления */}
-                  <button
-                    onClick={() => handleDelete(todo.id)}
-                    className="ml-2 px-3 py-1 rounded-lg bg-white/5 hover:bg-rose-500/20 
-                      text-white/40 hover:text-rose-400 opacity-0 group-hover:opacity-100 
-                      transition-all duration-200"
+              {/* Actions */}
+              <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+                {/* Move Buttons */}
+                <div className="flex gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleMove(todo.id, 'plus2h')}
+                    disabled={isLoading}
+                    className={`
+                      p-2 rounded-lg hover:bg-white/5 transition-all duration-300
+                      ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                    `}
+                    title="+2 часа"
                   >
-                    Удалить
-                  </button>
+                    <MdOutlineAccessTime className="w-5 h-5" />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleMove(todo.id, 'plus1d')}
+                    disabled={isLoading}
+                    className={`
+                      p-2 rounded-lg hover:bg-white/5 transition-all duration-300
+                      ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                    `}
+                    title="+1 день"
+                  >
+                    <MdOutlineCalendarToday className="w-5 h-5" />
+                  </motion.button>
                 </div>
+
+                {/* Delete Button */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleDelete(todo.id)}
+                  disabled={isLoading}
+                  className={`
+                    p-2 rounded-lg hover:bg-rose-500/10 text-rose-400/60 hover:text-rose-400 
+                    transition-all duration-300
+                    ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                  `}
+                >
+                  <MdDelete className="w-5 h-5" />
+                </motion.button>
               </div>
             </motion.div>
           )
-        })
-      )}
-    </AnimatePresence>
+        })}
+      </div>
+    </div>
   )
 } 

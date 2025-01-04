@@ -7,18 +7,28 @@ module.exports = {
   ],
   theme: {
     extend: {
+      animation: {
+        'gradient-slow': 'gradient 15s ease infinite',
+        'gradient-slow-reverse': 'gradient-reverse 15s ease infinite',
+        'wave': 'wave 7s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite',
+        'wave-slow': 'wave 11s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite',
+      },
       keyframes: {
-        'gradient-slow': {
+        gradient: {
           '0%, 100%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
         },
-      },
-      animation: {
-        'gradient-slow': 'gradient-slow 15s ease infinite',
-        'gradient-slow-reverse': 'gradient-slow 15s ease infinite reverse',
+        'gradient-reverse': {
+          '0%, 100%': { backgroundPosition: '100% 50%' },
+          '50%': { backgroundPosition: '0% 50%' },
+        },
+        wave: {
+          '0%': { backgroundPosition: '0 bottom' },
+          '100%': { backgroundPosition: '-200% bottom' }
+        }
       },
       backgroundSize: {
-        'gradient-size': '400% 400%',
+        '400%': '400% 400%',
       },
     },
   },
