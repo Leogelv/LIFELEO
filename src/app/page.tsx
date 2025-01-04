@@ -4,41 +4,11 @@ import { useEffect, useState } from 'react'
 import { UserIdProvider } from './contexts/UserContext'
 import { HabitCard } from './components/habits/HabitCard'
 import { Icon } from '@iconify/react'
-import { motion } from 'framer-motion'
 import Link from 'next/link'
 import TelegramScript from './components/TelegramScript'
+import { TelegramLayout } from './components/layouts/TelegramLayout'
 
 const DEFAULT_USER_ID = 375634162
-
-// Типизация для Telegram WebApp
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: {
-        ready: () => void;
-        expand: () => void;
-        requestFullscreen: () => void;
-        isVerticalSwipesEnabled: boolean;
-        disableVerticalSwipes: () => void;
-        setHeaderColor: (color: string) => void;
-        setBackgroundColor: (color: string) => void;
-        addToHomeScreen: () => void;
-        initDataUnsafe: {
-          user?: {
-            id: number;
-            first_name: string;
-            last_name?: string;
-            username?: string;
-            photo_url?: string;
-          };
-        };
-        HapticFeedback: {
-          impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
-        };
-      };
-    };
-  }
-}
 
 export default function Home() {
   const [userId, setUserId] = useState<number>(DEFAULT_USER_ID)
@@ -73,51 +43,8 @@ export default function Home() {
   return (
     <UserIdProvider value={userId}>
       <TelegramScript />
-      <main className="min-h-screen bg-[#1A1A1A] text-white p-4 md:p-8">
-        {/* Анимированные градиенты на фоне */}
-        <div className="fixed inset-0 overflow-hidden">
-          <motion.div
-            animate={{
-              x: ['-25%', '25%', '-25%'],
-              y: ['-25%', '15%', '-25%'],
-              scale: [1, 1.2, 1]
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-r from-orange-500/20 to-rose-500/20 rounded-full blur-3xl"
-          />
-          <motion.div
-            animate={{
-              x: ['25%', '-25%', '25%'],
-              y: ['15%', '-25%', '15%'],
-              scale: [1.2, 1, 1.2]
-            }}
-            transition={{
-              duration: 25,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-l from-purple-500/20 to-blue-500/20 rounded-full blur-3xl"
-          />
-          <motion.div
-            animate={{
-              x: ['-15%', '25%', '-15%'],
-              y: ['25%', '-15%', '25%'],
-              scale: [1, 1.1, 1]
-            }}
-            transition={{
-              duration: 30,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-bl from-cyan-500/20 to-blue-500/20 rounded-full blur-3xl"
-          />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto">
+      <TelegramLayout>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Хедер */}
           <div className="flex justify-between items-center mb-12">
             <h1 className="text-4xl font-light text-[#E8D9C5]">Панель Смыслов</h1>
@@ -188,7 +115,7 @@ export default function Home() {
             На домашний экран
           </button>
         </div>
-      </main>
+      </TelegramLayout>
     </UserIdProvider>
   )
 }
