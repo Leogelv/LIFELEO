@@ -10,6 +10,9 @@ console.log('✅ YANDEX_API_KEY is set:', process.env.YANDEX_API_KEY?.slice(0, 5
 
 export async function GET(request: Request) {
   console.log('📥 Got request:', request.url)
+  console.log('📱 User Agent:', request.headers.get('user-agent'))
+  console.log('🌐 Origin:', request.headers.get('origin'))
+  console.log('🔑 Headers:', JSON.stringify(Object.fromEntries([...request.headers]), null, 2))
 
   // Handle CORS preflight requests
   if (request.method === 'OPTIONS') {
@@ -18,8 +21,9 @@ export async function GET(request: Request) {
       status: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Max-Age': '86400',
       },
     })
   }
@@ -31,7 +35,15 @@ export async function GET(request: Request) {
 
     if (!chatId) {
       console.error('❌ chat_id is missing')
-      return NextResponse.json({ error: 'chat_id is required' }, { status: 400 })
+      return NextResponse.json({ error: 'chat_id is required' }, { 
+        status: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Max-Age': '86400',
+        }
+      })
     }
 
     console.log('🚀 Fetching from Yandex Cloud for chat:', chatId)
@@ -43,7 +55,8 @@ export async function GET(request: Request) {
       method: 'GET',
       headers: {
         'Authorization': `Api-Key ${process.env.YANDEX_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
     })
 
@@ -52,7 +65,8 @@ export async function GET(request: Request) {
       console.error('❌ Yandex API error:', {
         status: response.status,
         statusText: response.statusText,
-        response: text
+        response: text,
+        headers: JSON.stringify(Object.fromEntries([...response.headers]), null, 2)
       })
       return NextResponse.json({ 
         error: 'Failed to fetch chat history',
@@ -62,8 +76,9 @@ export async function GET(request: Request) {
         status: response.status,
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Max-Age': '86400',
         }
       })
     }
@@ -74,8 +89,9 @@ export async function GET(request: Request) {
     return NextResponse.json(data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Max-Age': '86400',
       },
     })
 
@@ -88,8 +104,9 @@ export async function GET(request: Request) {
         status: 500,
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Max-Age': '86400',
         },
       }
     )
