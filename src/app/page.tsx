@@ -17,6 +17,12 @@ declare global {
       WebApp: {
         ready: () => void;
         expand: () => void;
+        requestFullscreen: () => void;
+        isVerticalSwipesEnabled: boolean;
+        disableVerticalSwipes: () => void;
+        setHeaderColor: (color: string) => void;
+        setBackgroundColor: (color: string) => void;
+        addToHomeScreen: () => void;
         initDataUnsafe: {
           user?: {
             id: number;
@@ -44,6 +50,11 @@ export default function Home() {
       const tg = window.Telegram.WebApp
       tg.ready()
       tg.expand()
+      tg.requestFullscreen()
+      tg.isVerticalSwipesEnabled = true
+      tg.disableVerticalSwipes()
+      tg.setHeaderColor('#1A1A1A')
+      tg.setBackgroundColor('#1A1A1A')
 
       // Получаем данные пользователя
       if (tg.initDataUnsafe?.user) {
@@ -168,6 +179,14 @@ export default function Home() {
               gradient="from-yellow-500/40 to-amber-400/30"
             />
           </div>
+
+          {/* Кнопка "На домашний экран" */}
+          <button
+            onClick={() => window.Telegram?.WebApp.addToHomeScreen()}
+            className="mx-auto mt-12 block px-4 py-2 text-sm text-[#E8D9C5]/70 border border-[#E8D9C5]/10 rounded-xl hover:border-[#E8D9C5]/20 transition-all duration-500"
+          >
+            На домашний экран
+          </button>
         </div>
       </main>
     </UserIdProvider>

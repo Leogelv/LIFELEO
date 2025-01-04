@@ -327,7 +327,7 @@ export function UniversalCalendarGrid({
         </div>
 
         {/* Дни недели */}
-        <div className="grid grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mb-4">
           {['Пн', 'Вт', 'Ср', 'Чт'].map(day => (
             <div key={day} className="h-12 flex items-center justify-center">
               <span className="text-lg font-light text-[#E8D9C5]/60">{day}</span>
@@ -341,7 +341,7 @@ export function UniversalCalendarGrid({
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 20 }}
-          className="grid grid-cols-4 gap-4" 
+          className="grid grid-cols-3 sm:grid-cols-4 gap-4" 
           style={{ overflow: 'visible' }}
         >
           {days.map((day, i) => {
