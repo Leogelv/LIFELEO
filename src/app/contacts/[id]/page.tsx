@@ -42,18 +42,23 @@ export default function ContactPage({ params }: { params: { id: string } }) {
   }, [params.id])
 
   async function fetchContact() {
-    const { data, error } = await supabase
-      .from('contacts_userbot_leo')
-      .select('*')
-      .eq('user_id', params.id)
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('contacts_userbot_leo')
+        .select('*')
+        .eq('user_id', params.id)
+        .single()
 
-    if (error) {
-      console.error('Error fetching contact:', error)
-      return
+      if (error) {
+        console.error('Error fetching contact:', error)
+        return
+      }
+
+      setContact(data)
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Не удалось загрузить контакт')
     }
-
-    setContact(data)
   }
 
   async function analyzeHistory() {
@@ -61,8 +66,19 @@ export default function ContactPage({ params }: { params: { id: string } }) {
       setAnalyzing(true)
       
       // Fetch chat history through our API route
-      const response = await fetch(`/api/contacts?chat_id=${params.id}`)
-      if (!response.ok) throw new Error('Failed to fetch history')
+      const response = await fetch(`/api/contacts?chat_id=${params.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const error = await response.text()
+        console.error('Failed to fetch history:', error)
+        throw new Error('Failed to fetch history')
+      }
+
       const history = await response.json()
 
       // Send to DeepSeek
@@ -72,7 +88,12 @@ export default function ContactPage({ params }: { params: { id: string } }) {
         body: JSON.stringify({ history })
       })
 
-      if (!deepseekResponse.ok) throw new Error('Failed to analyze')
+      if (!deepseekResponse.ok) {
+        const error = await deepseekResponse.text()
+        console.error('Failed to analyze:', error)
+        throw new Error('Failed to analyze')
+      }
+
       const analysis = await deepseekResponse.json()
 
       // Update contact in Supabase
@@ -99,6 +120,8 @@ export default function ContactPage({ params }: { params: { id: string } }) {
         summary: analysis
       } : null)
 
+      toast.success('Анализ успешно завершен!')
+
     } catch (error) {
       console.error('Error:', error)
       toast.error('Не удалось проанализировать историю')
@@ -114,18 +137,18 @@ export default function ContactPage({ params }: { params: { id: string } }) {
       {/* Header с крутым градиентным бордером */}
       <div className="relative mb-8 p-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
         <div className="flex items-center justify-between p-4 bg-gray-900 rounded-2xl">
-        <button 
-          onClick={() => router.back()}
+          <button 
+            onClick={() => router.back()}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 
               text-gray-300 hover:text-white transition-all duration-200"
-        >
+          >
             <span>←</span>
             <span>Назад</span>
-        </button>
+          </button>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 
             text-transparent bg-clip-text">
-          {contact.first_name} {contact.last_name}
-        </h1>
+            {contact.first_name} {contact.last_name}
+          </h1>
           <div className="w-24" />
         </div>
       </div>
@@ -135,9 +158,9 @@ export default function ContactPage({ params }: { params: { id: string } }) {
         <div className="relative">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white">Анализ диалога</h2>
-              <button
-                onClick={analyzeHistory}
-                disabled={analyzing}
+            <button
+              onClick={analyzeHistory}
+              disabled={analyzing}
               className="relative group px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500
                 text-white font-medium transition-all duration-300 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]
                 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -160,10 +183,10 @@ export default function ContactPage({ params }: { params: { id: string } }) {
                   </>
                 )}
               </span>
-              </button>
-            </div>
+            </button>
+          </div>
 
-            {contact.summary ? (
+          {contact.summary ? (
             <AnalysisCard analysis={contact.summary} />
           ) : (
             <div className="bg-gray-800/40 backdrop-blur-xl rounded-xl p-8 border border-gray-700/50 text-center">
@@ -178,7 +201,7 @@ export default function ContactPage({ params }: { params: { id: string } }) {
                 Нажмите кнопку "Анализировать диалог" чтобы получить анализ переписки
               </p>
             </div>
-            )}
+          )}
         </div>
 
         {/* История сообщений */}
@@ -186,7 +209,7 @@ export default function ContactPage({ params }: { params: { id: string } }) {
           <h2 className="text-2xl font-bold text-white mb-6">История сообщений</h2>
           
           <div className="bg-gray-800/40 backdrop-blur-xl rounded-xl p-6 border border-gray-700/50">
-          {contact.history?.raw?.messages ? (
+            {contact.history?.raw?.messages ? (
               <MessageHistory messages={contact.history.raw.messages} />
             ) : (
               <div className="text-center py-8">
@@ -198,10 +221,10 @@ export default function ContactPage({ params }: { params: { id: string } }) {
                   </svg>
                 </div>
                 <p className="text-gray-400 text-lg">
-              История сообщений появится после анализа диалога
-            </p>
+                  История сообщений появится после анализа диалога
+                </p>
               </div>
-          )}
+            )}
           </div>
         </div>
       </div>
