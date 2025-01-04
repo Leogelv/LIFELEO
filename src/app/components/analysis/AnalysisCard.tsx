@@ -91,8 +91,8 @@ export function AnalysisCard({ analysis }: Props) {
         windowWidth: 1920,
       },
       jsPDF: { 
-        unit: 'px', 
-        format: [1080, 99999],
+        unit: 'px',
+        format: 'a4',
         orientation: 'portrait' as const,
         putOnlyUsedFonts: true,
         compress: true,
