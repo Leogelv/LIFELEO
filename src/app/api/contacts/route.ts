@@ -12,7 +12,13 @@ export async function GET(request: Request) {
   console.log('📥 Got request:', request.url)
   console.log('📱 User Agent:', request.headers.get('user-agent'))
   console.log('🌐 Origin:', request.headers.get('origin'))
-  console.log('🔑 Headers:', JSON.stringify(Object.fromEntries([...request.headers]), null, 2))
+  
+  // Получаем заголовки безопасным способом
+  const headersList = {} as Record<string, string>
+  request.headers.forEach((value, key) => {
+    headersList[key] = value
+  })
+  console.log('🔑 Headers:', JSON.stringify(headersList, null, 2))
 
   // Handle CORS preflight requests
   if (request.method === 'OPTIONS') {
@@ -62,11 +68,16 @@ export async function GET(request: Request) {
 
     if (!response.ok) {
       const text = await response.text()
+      // Получаем заголовки ответа безопасным способом
+      const responseHeaders = {} as Record<string, string>
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value
+      })
       console.error('❌ Yandex API error:', {
         status: response.status,
         statusText: response.statusText,
         response: text,
-        headers: JSON.stringify(Object.fromEntries([...response.headers]), null, 2)
+        headers: JSON.stringify(responseHeaders, null, 2)
       })
       return NextResponse.json({ 
         error: 'Failed to fetch chat history',
