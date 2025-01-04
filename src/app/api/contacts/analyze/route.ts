@@ -2,6 +2,21 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 
+// Увеличиваем таймаут до 2 минут
+export const maxDuration = 120;
+
+// CORS заголовки
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+// Обработка CORS preflight
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
+
 if (!process.env.YANDEX_API_KEY) {
   console.error('❌ YANDEX_API_KEY is not set')
   throw new Error('YANDEX_API_KEY is not set in environment variables')
@@ -21,7 +36,10 @@ export async function POST(request: Request) {
 
     if (!chat_id) {
       console.error('❌ chat_id is missing')
-      return NextResponse.json({ error: 'chat_id is required' }, { status: 400 })
+      return NextResponse.json({ error: 'chat_id is required' }, { 
+        status: 400,
+        headers: corsHeaders
+      })
     }
 
     // 1. Получаем историю из Yandex Cloud
@@ -32,7 +50,9 @@ export async function POST(request: Request) {
       headers: {
         'Authorization': `Api-Key ${process.env.YANDEX_API_KEY}`,
         'Content-Type': 'application/json'
-      }
+      },
+      // Таймаут для Yandex Cloud
+      signal: AbortSignal.timeout(30000)
     })
 
     if (!historyResponse.ok) {
@@ -46,7 +66,10 @@ export async function POST(request: Request) {
         error: 'Failed to fetch chat history',
         details: `API returned ${historyResponse.status} ${historyResponse.statusText}`,
         response: text
-      }, { status: historyResponse.status })
+      }, { 
+        status: historyResponse.status,
+        headers: corsHeaders
+      })
     }
 
     const history = await historyResponse.json()
@@ -60,6 +83,8 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json'
       },
+      // Таймаут для DeepSeek
+      signal: AbortSignal.timeout(90000),
       body: JSON.stringify({
         model: "deepseek-chat",
         response_format: {
@@ -130,7 +155,10 @@ export async function POST(request: Request) {
         error: 'Failed to analyze chat history',
         details: `API returned ${deepseekResponse.status} ${deepseekResponse.statusText}`,
         response: text
-      }, { status: deepseekResponse.status })
+      }, { 
+        status: deepseekResponse.status,
+        headers: corsHeaders
+      })
     }
 
     const analysis = await deepseekResponse.json()
@@ -158,7 +186,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ 
         error: 'Failed to save analysis',
         details: supabaseError.message
-      }, { status: 500 })
+      }, { 
+        status: 500,
+        headers: corsHeaders
+      })
     }
 
     console.log('✅ Saved to Supabase')
@@ -170,6 +201,8 @@ export async function POST(request: Request) {
         raw: history,
         analysis
       }
+    }, {
+      headers: corsHeaders
     })
 
   } catch (error: unknown) {
@@ -177,7 +210,10 @@ export async function POST(request: Request) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       { error: 'Failed to analyze chat history', details: errorMessage }, 
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders
+      }
     )
   }
 } 
