@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
     console.log('🚀 Fetching from Vercel API')
     
-    const vercelUrl = `https://lifeleo-api.vercel.app/api/messages`
+    const vercelUrl = `https://lifeleo-api.vercel.app/api/messages?chat_id=${chatId}`
     console.log('📡 Vercel URL:', vercelUrl)
     
     const response = await fetch(vercelUrl)
