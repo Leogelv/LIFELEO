@@ -83,26 +83,59 @@ export function UniversalCalendarGrid({
     const percentage = Math.min((amount / maxAmount) * 100, 100)
 
     return (
-      <div className="flex flex-col items-center justify-center h-full relative">
-        {/* Индикатор воды */}
-        <div className="absolute inset-0 rounded-lg overflow-hidden bg-gradient-to-b from-[#E8D9C5]/[0.02] to-[#E8D9C5]/[0.05]">
-          <div 
-            className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-blue-500/20 to-cyan-500/20 transition-all duration-300"
-            style={{ height: `${percentage}%` }}
-          >
-            <div className="absolute inset-0 animate-wave-slow opacity-50"
-              style={{ 
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 88.7'%3E%3Cpath d='M800 56.9c-155.5 0-204.9-50-405.5-49.9-200 0-250 49.9-394.5 49.9v31.8h800v-.2-31.6z' fill='%23E8D9C5'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'repeat-x',
-                backgroundPosition: '0 bottom',
-                backgroundSize: '200px auto'
-              }}
-            />
-          </div>
+      <div className="absolute inset-0 rounded-lg overflow-hidden">
+        <motion.div 
+          initial={{ height: 0 }}
+          animate={{ height: `${percentage}%` }}
+          transition={{ 
+            type: "spring",
+            stiffness: 100,
+            damping: 20,
+            mass: 1
+          }}
+          className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-blue-500/30 to-cyan-500/20 backdrop-blur-sm"
+        >
+          <motion.div 
+            className="absolute inset-0"
+            style={{ 
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 88.7'%3E%3Cpath d='M800 56.9c-155.5 0-204.9-50-405.5-49.9-200 0-250 49.9-394.5 49.9v31.8h800v-.2-31.6z' fill='%23E8D9C5'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'repeat-x',
+              backgroundPosition: '0 bottom',
+              backgroundSize: '200px auto'
+            }}
+            animate={{ 
+              x: ["0%", "-50%"]
+            }}
+            transition={{ 
+              duration: 5,
+              ease: "linear",
+              repeat: Infinity
+            }}
+          />
+          <motion.div 
+            className="absolute inset-0"
+            style={{ 
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 88.7'%3E%3Cpath d='M800 56.9c-155.5 0-204.9-50-405.5-49.9-200 0-250 49.9-394.5 49.9v31.8h800v-.2-31.6z' fill='%23E8D9C5'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'repeat-x',
+              backgroundPosition: '0 bottom',
+              backgroundSize: '160px auto',
+              opacity: 0.5
+            }}
+            animate={{ 
+              x: ["-50%", "0%"]
+            }}
+            transition={{ 
+              duration: 7,
+              ease: "linear",
+              repeat: Infinity
+            }}
+          />
+        </motion.div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-lg font-light text-[#E8D9C5]">
+            {amount.toFixed(1)}л
+          </span>
         </div>
-        <span className="relative z-10 text-lg font-light text-[#E8D9C5]">
-          {amount.toFixed(1)}л
-        </span>
       </div>
     )
   }
@@ -281,39 +314,6 @@ export function UniversalCalendarGrid({
                   <div className="absolute inset-0 pt-12" style={{ overflow: 'visible' }}>
                     {renderDayContent(day)}
                   </div>
-
-                  {/* Water visualization */}
-                  {mode === 'water' && (() => {
-                    const daySessions = sessions.filter(s => isSameDay(new Date(s.date), day))
-                    if (!daySessions.length || !daySessions[0].amount) return null
-                    
-                    return (
-                      <div className="absolute inset-x-0 bottom-0 overflow-hidden rounded-lg">
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ 
-                            height: `${Math.min(100, (daySessions[0].amount / 3000) * 100)}%`
-                          }}
-                          transition={{ duration: 1, ease: "easeOut" }}
-                          className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-blue-500/50 to-cyan-500/30 backdrop-blur-sm"
-                          style={{
-                            borderRadius: '8px 8px 0 0',
-                            maxHeight: '100%'
-                          }}
-                        >
-                          <div 
-                            className="absolute inset-0 bg-[url('/wave.svg')] bg-repeat-x animate-wave opacity-50"
-                            style={{ backgroundSize: '20px 4px' }}
-                          />
-                        </motion.div>
-                        <div className="relative z-10 p-2 text-center">
-                          <span className="text-sm font-medium">
-                            {(daySessions[0].amount / 1000).toFixed(1)}л
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })()}
                 </div>
               </motion.div>
             )
