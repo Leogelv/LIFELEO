@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 
-// Увеличиваем таймаут до 2 минут
-export const maxDuration = 120;
+// Уменьшаем таймаут до 60 секунд (лимит Vercel)
+export const maxDuration = 60;
 
 // CORS заголовки
 const corsHeaders = {
@@ -51,8 +51,8 @@ export async function POST(request: Request) {
         'Authorization': `Api-Key ${process.env.YANDEX_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      // Таймаут для Yandex Cloud
-      signal: AbortSignal.timeout(30000)
+      // Уменьшаем таймаут для Yandex Cloud
+      signal: AbortSignal.timeout(15000)
     })
 
     if (!historyResponse.ok) {
@@ -83,8 +83,8 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      // Таймаут для DeepSeek
-      signal: AbortSignal.timeout(90000),
+      // Уменьшаем таймаут для DeepSeek
+      signal: AbortSignal.timeout(40000),
       body: JSON.stringify({
         model: "deepseek-chat",
         response_format: {
