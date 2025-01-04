@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { AnalysisCard } from '@/app/components/analysis/AnalysisCard'
 import { MessageHistory } from '@/app/components/analysis/MessageHistory'
 import { ParticipantInfo } from '@/app/components/analysis/ParticipantInfo'
+import { toast } from 'react-hot-toast'
 
 export default function ContactPage({ params }: { params: { id: string } }) {
   const [contact, setContact] = useState<Contact | null>(null)
@@ -59,7 +60,7 @@ export default function ContactPage({ params }: { params: { id: string } }) {
     try {
       setAnalyzing(true)
       
-      // Fetch chat history
+      // Fetch chat history through our API route
       const response = await fetch(`/api/contacts?chat_id=${params.id}`)
       if (!response.ok) throw new Error('Failed to fetch history')
       const history = await response.json()
@@ -100,7 +101,7 @@ export default function ContactPage({ params }: { params: { id: string } }) {
 
     } catch (error) {
       console.error('Error:', error)
-      alert('Failed to analyze history')
+      toast.error('Не удалось проанализировать историю')
     } finally {
       setAnalyzing(false)
     }
