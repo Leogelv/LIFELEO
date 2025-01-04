@@ -2,8 +2,36 @@
 
 import { HabitsList } from '../components/habits/HabitsList'
 import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/utils/supabase/client'
+import { format, startOfDay, endOfDay } from 'date-fns'
 
 export default function HabitsPage() {
+  const [totalMeditationMinutes, setTotalMeditationMinutes] = useState(0)
+
+  useEffect(() => {
+    const fetchMeditationStats = async () => {
+      const supabase = createClient()
+      const today = new Date()
+      
+      const { data, error } = await supabase
+        .from('meditation_sessions')
+        .select('duration')
+        .gte('date', format(startOfDay(today), 'yyyy-MM-dd'))
+        .lte('date', format(endOfDay(today), 'yyyy-MM-dd'))
+
+      if (error) {
+        console.error('Error fetching meditation stats:', error)
+        return
+      }
+
+      const total = data?.reduce((sum, session) => sum + (session.duration || 0), 0) || 0
+      setTotalMeditationMinutes(total)
+    }
+
+    fetchMeditationStats()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 p-6">
       {/* Header с градиентным бордером */}
@@ -32,7 +60,7 @@ export default function HabitsPage() {
         transition={{ duration: 0.5 }}
         className="space-y-8"
       >
-        <HabitsList />
+        <HabitsList totalMeditationMinutes={totalMeditationMinutes} />
       </motion.div>
     </div>
   )
