@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 
-if (!process.env.YANDEX_API_KEY) {
-  console.error('❌ YANDEX_API_KEY is not set')
-  throw new Error('YANDEX_API_KEY is not set in environment variables')
-}
-
-console.log('✅ YANDEX_API_KEY is set:', process.env.YANDEX_API_KEY?.slice(0, 5) + '...')
-
 export async function GET(request: Request) {
   console.log('📥 Got request:', request.url)
 
@@ -34,22 +27,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'chat_id is required' }, { status: 400 })
     }
 
-    console.log('🚀 Fetching from Yandex Cloud for chat:', chatId)
+    console.log('🚀 Fetching from Vercel API')
     
-    const yandexUrl = `https://functions.yandexcloud.net/d4em009uqs3tbu0k3ogl?chat_id=${chatId}`
-    console.log('📡 Yandex URL:', yandexUrl)
+    const vercelUrl = `https://lifeleo-api.vercel.app/api/messages`
+    console.log('📡 Vercel URL:', vercelUrl)
     
-    const response = await fetch(yandexUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Api-Key ${process.env.YANDEX_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await fetch(vercelUrl)
 
     if (!response.ok) {
       const text = await response.text()
-      console.error('❌ Yandex API error:', {
+      console.error('❌ Vercel API error:', {
         status: response.status,
         statusText: response.statusText,
         response: text
@@ -69,7 +56,7 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json()
-    console.log('✅ Got history from Yandex:', data)
+    console.log('✅ Got history from Vercel:', data)
 
     return NextResponse.json(data, {
       headers: {
