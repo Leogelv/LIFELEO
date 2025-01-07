@@ -7,9 +7,17 @@ import Link from 'next/link'
 import TelegramScript from './components/TelegramScript'
 import { useTelegram } from './hooks/useTelegram'
 import { BottomMenu } from './components/BottomMenu'
+import { useWaterSessions } from './hooks/useWaterSessions'
 
 export default function Home() {
   const { isExpanded, userId, userData, isTelegram } = useTelegram()
+  const { sessions: waterSessions } = useWaterSessions()
+
+  // Считаем общее количество воды за сегодня
+  const today = new Date().toISOString().split('T')[0]
+  const todayWater = waterSessions
+    ?.filter(session => session.date.startsWith(today))
+    ?.reduce((acc, session) => acc + session.amount, 0) || 0
 
   return (
     <UserIdProvider value={userId}>
@@ -100,6 +108,7 @@ export default function Home() {
               title="Вода"
               href="/habits/water"
               gradient="from-blue-500/40 to-cyan-400/30"
+              amount={todayWater}
             />
             <HabitCard 
               icon="solar:dumbbell-small-bold"

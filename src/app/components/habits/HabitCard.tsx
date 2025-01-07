@@ -14,9 +14,11 @@ interface HabitCardProps {
   title: string
   href: string
   gradient: string
+  amount?: number
+  unit?: string
 }
 
-export function HabitCard({ icon, title, href, gradient }: HabitCardProps) {
+export function HabitCard({ icon, title, href, gradient, amount, unit }: HabitCardProps) {
   const userId = useContext(UserIdContext)
   const { sessions: waterSessions } = useWaterSessions()
   const { sessions: sportSessions } = useSportSessions()
@@ -39,6 +41,14 @@ export function HabitCard({ icon, title, href, gradient }: HabitCardProps) {
   }
 
   const stats = getStats()
+
+  // Конвертируем миллилитры в литры для воды
+  const displayAmount = title === 'Вода' && amount 
+    ? `${(amount / 1000).toFixed(1)}` 
+    : amount?.toString()
+
+  // Определяем единицу измерения
+  const displayUnit = title === 'Вода' ? 'л' : unit
 
   return (
     <Link href={href}>
