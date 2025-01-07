@@ -9,7 +9,7 @@ import { useWaterSessions } from '@/app/hooks/useWaterSessions'
 import { useTelegram } from '@/app/hooks/useTelegram'
 
 function WaterInput({ onAdd }: { onAdd: (amount: number) => void }) {
-  const [amount, setAmount] = useState(250)
+  const [amount, setAmount] = useState(0.25)
 
   return (
     <div className="flex flex-col gap-4 p-6 rounded-2xl bg-[#2A2A2A]/50 backdrop-blur-lg mb-8">
@@ -21,7 +21,7 @@ function WaterInput({ onAdd }: { onAdd: (amount: number) => void }) {
       <div className="flex items-center gap-4">
         <motion.button 
           whileTap={{ scale: 0.95 }}
-          onClick={() => setAmount(prev => Math.max(50, prev - 50))}
+          onClick={() => setAmount(prev => Math.max(0.05, prev - 0.05))}
           className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors"
         >
           <Icon icon="solar:minus-circle-outline" className="w-6 h-6 text-[#E8D9C5]" />
@@ -31,15 +31,16 @@ function WaterInput({ onAdd }: { onAdd: (amount: number) => void }) {
           <input
             type="number"
             value={amount}
-            onChange={(e) => setAmount(Math.max(0, parseInt(e.target.value) || 0))}
+            step="0.05"
+            onChange={(e) => setAmount(Math.max(0, parseFloat(e.target.value) || 0))}
             className="w-full px-4 py-2 text-center text-xl bg-[#2A2A2A] text-[#E8D9C5] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <div className="text-center mt-1 text-sm text-[#E8D9C5]/60">мл</div>
+          <div className="text-center mt-1 text-sm text-[#E8D9C5]/60">л</div>
         </div>
 
         <motion.button 
           whileTap={{ scale: 0.95 }}
-          onClick={() => setAmount(prev => prev + 50)}
+          onClick={() => setAmount(prev => prev + 0.05)}
           className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors"
         >
           <Icon icon="solar:add-circle-outline" className="w-6 h-6 text-[#E8D9C5]" />
@@ -47,7 +48,7 @@ function WaterInput({ onAdd }: { onAdd: (amount: number) => void }) {
       </div>
 
       <div className="flex gap-2">
-        {[250, 500, 750].map(preset => (
+        {[0.25, 0.5, 0.75].map(preset => (
           <motion.button
             key={preset}
             whileTap={{ scale: 0.95 }}
@@ -58,14 +59,14 @@ function WaterInput({ onAdd }: { onAdd: (amount: number) => void }) {
                 : 'bg-[#2A2A2A] hover:bg-[#333333]'
             }`}
           >
-            {preset} мл
+            {preset} л
           </motion.button>
         ))}
       </div>
 
       <motion.button
         whileTap={{ scale: 0.95 }}
-        onClick={() => onAdd(amount)}
+        onClick={() => onAdd(amount * 1000)}
         className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 transition-colors font-medium text-white"
       >
         Добавить

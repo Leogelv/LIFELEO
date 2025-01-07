@@ -104,13 +104,65 @@ src/
 - long_term_goals: text
 - skills: text
 - created_at: timestamp
+- updated_at: timestamp
 
 ### water_sessions
 - id: uuid (PRIMARY KEY)
 - user_id: number (foreign key -> uzerz.telegram_id)
-- amount: number
+- amount: number (в миллилитрах)
 - date: timestamp
 - created_at: timestamp
+- updated_at: timestamp
+
+### meditation_sessions
+- id: uuid (PRIMARY KEY)
+- user_id: number (foreign key -> uzerz.telegram_id)
+- duration: number (в минутах)
+- type: text ('morning' | 'evening')
+- date: timestamp
+- completed: boolean
+- created_at: timestamp
+- updated_at: timestamp
+
+### sport_sessions
+- id: uuid (PRIMARY KEY)
+- user_id: number (foreign key -> uzerz.telegram_id)
+- type: text ('cardio' | 'strength' | 'flexibility')
+- intensity: text ('low' | 'medium' | 'high')
+- duration: number (в минутах)
+- date: timestamp
+- notes: text
+- created_at: timestamp
+- updated_at: timestamp
+
+### contacts
+- id: uuid (PRIMARY KEY)
+- user_id: number (foreign key -> uzerz.telegram_id)
+- contact_id: number (telegram_id контакта)
+- name: text
+- notes: text
+- created_at: timestamp
+- updated_at: timestamp
+
+### messages
+- id: uuid (PRIMARY KEY)
+- user_id: number (foreign key -> uzerz.telegram_id)
+- contact_id: number (foreign key -> contacts.contact_id)
+- content: text
+- sentiment: text ('positive' | 'neutral' | 'negative')
+- created_at: timestamp
+- updated_at: timestamp
+
+### todos
+- id: uuid (PRIMARY KEY)
+- user_id: number (foreign key -> uzerz.telegram_id)
+- title: text
+- description: text
+- priority: text ('high' | 'medium' | 'low')
+- status: text ('pending' | 'in_progress' | 'completed')
+- due_date: timestamp
+- created_at: timestamp
+- updated_at: timestamp
 
 ## API Endpoints
 
