@@ -6,14 +6,16 @@ import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import { motion } from 'framer-motion'
 import { useSleepSessions } from '@/app/hooks/useSleepSessions'
+import { useTelegram } from '@/app/hooks/useTelegram'
 
 export default function SleepPage() {
   const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   const { sessions } = useSleepSessions()
+  const { isExpanded } = useTelegram()
 
   return (
-    <div className="min-h-screen bg-[#1A1A1A] text-white p-4 md:p-8">
+    <div className={`min-h-screen bg-gray-900 text-white ${isExpanded ? 'pt-[100px]' : ''}`}>
       {/* Хедер */}
       <div className="flex items-center gap-4 mb-8">
         <motion.button

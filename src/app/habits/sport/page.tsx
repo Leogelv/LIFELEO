@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import { motion } from 'framer-motion'
 import { useSportSessions } from '@/app/hooks/useSportSessions'
+import { useTelegram } from '@/app/hooks/useTelegram'
 
 export default function SportPage() {
   const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   const { sessions } = useSportSessions()
+  const { isExpanded } = useTelegram()
 
   // Преобразуем тип intensity для совместимости с UniversalCalendarGrid
   const formattedSessions = sessions.map(session => ({
@@ -19,7 +21,7 @@ export default function SportPage() {
   }))
 
   return (
-    <div className="min-h-[100dvh] bg-[#1A1A1A] text-white p-3 md:p-8">
+    <div className={`min-h-screen bg-gray-900 text-white ${isExpanded ? 'pt-[100px]' : ''}`}>
       {/* Хедер */}
       <div className="flex items-center gap-3 mb-4 md:mb-8">
         <motion.button
