@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useTelegram } from '../hooks/useTelegram'
+import { Icon } from '@iconify/react'
+import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -10,7 +13,8 @@ const supabase = createClient(
 )
 
 export default function Profile() {
-  const { userId } = useTelegram()
+  const router = useRouter()
+  const { userId, isExpanded } = useTelegram()
   const [isLoading, setIsLoading] = useState(true)
   const [profile, setProfile] = useState({
     priorities: '',
@@ -80,8 +84,18 @@ export default function Profile() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 pb-24">
-      <h1 className="text-3xl font-light text-[#E8D9C5] mb-8">Мой профиль</h1>
+    <div className={`min-h-screen bg-[#1A1A1A] text-white p-4 md:p-8 ${isExpanded ? 'pt-[100px]' : ''}`}>
+      {/* Хедер */}
+      <div className="flex items-center gap-4 mb-8">
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() => router.back()}
+          className="p-2 rounded-lg hover:bg-[#E8D9C5]/5 transition-colors"
+        >
+          <Icon icon="solar:arrow-left-outline" className="w-6 h-6 text-[#E8D9C5]/60" />
+        </motion.button>
+        <h1 className="text-2xl font-light text-[#E8D9C5]">Мой профиль</h1>
+      </div>
       
       <div className="space-y-6">
         <div>
@@ -124,12 +138,13 @@ export default function Profile() {
           />
         </div>
 
-        <button
+        <motion.button
+          whileTap={{ scale: 0.95 }}
           onClick={handleSave}
           className="w-full py-3 bg-gradient-to-r from-purple-500/80 to-blue-500/80 rounded-xl text-[#E8D9C5] font-medium hover:from-purple-500/90 hover:to-blue-500/90 transition-all duration-300"
         >
           Сохранить изменения
-        </button>
+        </motion.button>
       </div>
     </div>
   )
