@@ -29,7 +29,7 @@ export function HabitCard({ icon, title, href, gradient, amount, unit }: HabitCa
     switch (title) {
       case 'Вода': {
         const todayWater = waterSessions.find(s => s.date === today)
-        return todayWater ? `${todayWater.amount} стаканов сегодня` : 'Нет данных'
+        return todayWater ? `${(todayWater.amount / 1000).toFixed(1)} литров сегодня` : 'Нет данных'
       }
       case 'Спорт': {
         const todaySport = sportSessions.find(s => s.date === today)
