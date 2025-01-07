@@ -34,6 +34,7 @@ export const useTelegram = () => {
 
     tg.ready()
     tg.expand()
+    tg.requestFullscreen?.()
     
     // Устанавливаем цвет хедера и отключаем свайпы только в телеграме
     tg.setHeaderColor('#1A1A1A')

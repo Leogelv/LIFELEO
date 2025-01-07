@@ -17,6 +17,7 @@ export interface TelegramWebApp {
   isVerticalSwipesEnabled: boolean
   disableVerticalSwipes: () => void
   enableVerticalSwipes: () => void
+  requestFullscreen?: () => void
   addToHomeScreen?: () => void
   initDataUnsafe?: {
     user?: TelegramUser
