@@ -3,7 +3,6 @@
 import { UserIdProvider } from './contexts/UserContext'
 import { HabitCard } from './components/habits/HabitCard'
 import { Icon } from '@iconify/react'
-import { motion } from 'framer-motion'
 import Link from 'next/link'
 import TelegramScript from './components/TelegramScript'
 import { useTelegram } from './hooks/useTelegram'
@@ -15,47 +14,59 @@ export default function Home() {
     <UserIdProvider value={userId}>
       <TelegramScript />
       <main className={`min-h-screen relative overflow-hidden ${isExpanded ? 'pt-[100px]' : ''}`}>
-        {/* Анимированные градиенты на фоне */}
+        {/* Оптимизированные CSS блобы */}
         <div className="fixed inset-0 overflow-hidden">
-          <motion.div
-            animate={{
-              x: ['-25%', '25%', '-25%'],
-              y: ['-25%', '15%', '-25%'],
-              scale: [1, 1.2, 1]
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-r from-orange-500/20 to-rose-500/20 rounded-full blur-3xl"
-          />
-          <motion.div
-            animate={{
-              x: ['25%', '-25%', '25%'],
-              y: ['15%', '-25%', '15%'],
-              scale: [1.2, 1, 1.2]
-            }}
-            transition={{
-              duration: 25,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-l from-purple-500/20 to-blue-500/20 rounded-full blur-3xl"
-          />
-          <motion.div
-            animate={{
-              x: ['-15%', '25%', '-15%'],
-              y: ['25%', '-15%', '25%'],
-              scale: [1, 1.1, 1]
-            }}
-            transition={{
-              duration: 30,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-bl from-cyan-500/20 to-blue-500/20 rounded-full blur-3xl"
-          />
+          <div className="blob blob-1" />
+          <div className="blob blob-2" />
+          <div className="blob blob-3" />
+          <style jsx>{`
+            .blob {
+              position: absolute;
+              width: 100%;
+              height: 100%;
+              border-radius: 50%;
+              mix-blend-mode: screen;
+              filter: blur(80px);
+              animation: float 20s infinite ease-in-out;
+              opacity: 0.7;
+            }
+            
+            .blob-1 {
+              background: linear-gradient(90deg, rgba(255,107,0,0.2) 0%, rgba(255,0,81,0.2) 100%);
+              top: -50%;
+              left: -50%;
+              animation-delay: 0s;
+            }
+            
+            .blob-2 {
+              background: linear-gradient(90deg, rgba(128,0,255,0.2) 0%, rgba(0,102,255,0.2) 100%);
+              bottom: -50%;
+              right: -50%;
+              animation-delay: -7s;
+            }
+            
+            .blob-3 {
+              background: linear-gradient(90deg, rgba(0,255,255,0.2) 0%, rgba(0,102,255,0.2) 100%);
+              top: -50%;
+              right: -50%;
+              animation-delay: -14s;
+            }
+            
+            @keyframes float {
+              0%, 100% {
+                transform: translate(0, 0) scale(1);
+              }
+              25% {
+                transform: translate(10%, 10%) scale(1.1);
+              }
+              50% {
+                transform: translate(-5%, 5%) scale(0.9);
+              }
+              75% {
+                transform: translate(5%, -10%) scale(1.05);
+              }
+            }
+          `}</style>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto">
