@@ -1,46 +1,58 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import type { TelegramUser } from '../types/telegram-webapp'
 
-const DEFAULT_USER_ID = 375634162
-
-export function useTelegram() {
+export const useTelegram = () => {
+  const [isReady, setIsReady] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
-  const [userId, setUserId] = useState(DEFAULT_USER_ID)
-  const [userData, setUserData] = useState<any>(null)
+  const [userData, setUserData] = useState<TelegramUser | null>(null)
+
+  // Проверяем, есть ли объект window.Telegram?.WebApp
+  const isTelegram = typeof window !== 'undefined' && window.Telegram?.WebApp
+
+  // Если мы в тестовой среде, используем тестовый ID
+  const userId = isTelegram && window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 375634162
 
   useEffect(() => {
-    // Проверяем, есть ли Telegram WebApp
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp
-      
-      // Инициализация WebApp
-      tg.ready()
-      tg.expand()
-      tg.requestFullscreen()
-      tg.isVerticalSwipesEnabled = true
-      tg.disableVerticalSwipes()
-      tg.setHeaderColor('#1A1A1A')
-      tg.setBackgroundColor('#1A1A1A')
-      
-      // Получаем данные пользователя
-      if (tg.initDataUnsafe?.user) {
-        setUserId(tg.initDataUnsafe.user.id)
-        setUserData(tg.initDataUnsafe.user)
-      }
-
-      // Слушаем изменения режима отображения
-      setIsExpanded(tg.isExpanded)
-      tg.onEvent('viewportChanged', () => {
-        setIsExpanded(tg.isExpanded)
-      })
+    if (!isTelegram) {
+      setIsReady(true)
+      return
     }
-  }, [])
+
+    const tg = window.Telegram!.WebApp
+
+    // Инициализация только если мы в Telegram
+    const onReady = () => {
+      setIsReady(true)
+      setUserData(tg.initDataUnsafe?.user || null)
+    }
+
+    const onExpand = () => {
+      setIsExpanded(true)
+    }
+
+    tg.ready()
+    tg.expand()
+    
+    // Устанавливаем цвет хедера и отключаем свайпы только в телеграме
+    tg.setHeaderColor('#1A1A1A')
+    tg.isVerticalSwipesEnabled = true
+    tg.disableVerticalSwipes()
+
+    onReady()
+    onExpand()
+
+    return () => {
+      // Очистка, если нужна
+    }
+  }, [isTelegram])
 
   return {
+    isReady,
     isExpanded,
     userId,
     userData,
-    isTelegram: typeof window !== 'undefined' && !!window.Telegram?.WebApp
+    isTelegram
   }
 } 

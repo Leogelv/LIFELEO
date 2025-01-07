@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react'
 import Link from 'next/link'
 import TelegramScript from './components/TelegramScript'
 import { useTelegram } from './hooks/useTelegram'
+import { BottomMenu } from './components/BottomMenu'
 
 export default function Home() {
   const { isExpanded, userId, userData, isTelegram } = useTelegram()
@@ -13,7 +14,7 @@ export default function Home() {
   return (
     <UserIdProvider value={userId}>
       <TelegramScript />
-      <main className={`min-h-screen relative overflow-hidden ${isExpanded ? 'pt-[100px]' : ''}`}>
+      <main className={`min-h-screen relative overflow-hidden pb-20 ${isExpanded ? 'pt-[100px]' : ''}`}>
         {/* Оптимизированные CSS блобы */}
         <div className="fixed inset-0 overflow-hidden">
           <div className="blob blob-1" />
@@ -135,7 +136,7 @@ export default function Home() {
           {/* Кнопка "На домашний экран" только для Telegram */}
           {isTelegram && (
             <button
-              onClick={() => window.Telegram?.WebApp.addToHomeScreen()}
+              onClick={() => window.Telegram?.WebApp.addToHomeScreen?.()}
               className="mx-auto mt-12 block px-4 py-2 text-sm text-[#E8D9C5]/70 border border-[#E8D9C5]/10 rounded-xl hover:border-[#E8D9C5]/20 transition-all duration-500"
             >
               На домашний экран
@@ -143,6 +144,7 @@ export default function Home() {
           )}
         </div>
       </main>
+      <BottomMenu />
     </UserIdProvider>
   )
 }
