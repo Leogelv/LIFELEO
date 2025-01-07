@@ -13,6 +13,7 @@ import { ru } from 'date-fns/locale'
 import Link from 'next/link'
 import { UniversalCalendarGrid } from '@/app/components/habits/UniversalCalendarGrid'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTelegram } from '@/app/hooks/useTelegram'
 
 interface Todo {
   id: string
@@ -24,6 +25,7 @@ interface Todo {
 }
 
 export default function TasksPage() {
+  const { isExpanded } = useTelegram()
   const [newTask, setNewTask] = useState('')
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [deadline, setDeadline] = useState(() => {
@@ -107,7 +109,7 @@ export default function TasksPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="min-h-screen relative overflow-hidden"
+      className={`min-h-screen relative overflow-hidden ${isExpanded ? 'pt-[100px]' : ''}`}
     >
       {/* Animated gradient background */}
       <motion.div 
