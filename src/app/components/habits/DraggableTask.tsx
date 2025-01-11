@@ -50,7 +50,7 @@ export function DraggableTask({ task, onMove, onDrag, onDragEnd }: DraggableTask
         relative flex flex-col gap-1 p-1.5 rounded-lg backdrop-blur-sm border
         cursor-move touch-none select-none text-[10px] sm:text-xs
         ${task.done 
-          ? 'text-[#E8D9C5]/40 line-through border-[#E8D9C5]/5 bg-gradient-to-r from-[#E8D9C5]/[0.02] to-[#E8D9C5]/[0.05]' 
+          ? 'text-[#E8D9C5]/80 line-through border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-emerald-400/5' 
           : isOverdue
             ? 'text-[#E8D9C5] border-[#E8D9C5]/30 bg-gradient-to-r from-rose-500/10 to-orange-500/10'
             : 'text-[#E8D9C5] border-[#E8D9C5]/10 bg-gradient-to-r from-[#E8D9C5]/[0.02] to-[#E8D9C5]/[0.05]'

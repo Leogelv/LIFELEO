@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MdOutlineTaskAlt, MdOutlineCalendarToday, MdArrowBack, MdOutlineRepeat } from 'react-icons/md'
+import { MdOutlineTaskAlt, MdOutlineCalendarToday, MdArrowBack, MdOutlineRepeat, MdViewDay, MdViewModule } from 'react-icons/md'
 import { IoTimeOutline } from 'react-icons/io5'
 import TodoList from '@/app/components/TodoList'
 import { supabase } from '@/utils/supabase/client'
@@ -41,6 +41,7 @@ export default function TasksPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [todos, setTodos] = useState<Todo[]>([])
   const userId = useContext(UserIdContext)
+  const [listView, setListView] = useState<'horizontal' | 'vertical'>('horizontal')
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -161,7 +162,7 @@ export default function TasksPage() {
               animate={{ scale: 1 }}
               className="text-center"
             >
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent">
                 Трекер задач
               </h1>
             </motion.div>
@@ -459,12 +460,28 @@ export default function TasksPage() {
             transition={{ delay: 0.2 }}
             className="space-y-4"
           >
-            <h2 className="text-2xl font-medium">Список задач</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-medium">Список задач</h2>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setListView(listView === 'horizontal' ? 'vertical' : 'horizontal')}
+                className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                title={listView === 'horizontal' ? 'Вертикальный список' : 'Горизонтальный список'}
+              >
+                {listView === 'horizontal' ? (
+                  <MdViewDay className="w-6 h-6" />
+                ) : (
+                  <MdViewModule className="w-6 h-6" />
+                )}
+              </motion.button>
+            </div>
             <div className="overflow-x-auto pb-4 -mx-4 px-4">
               <div className="flex gap-4">
                 <TodoList 
                   initialTodos={[]} 
                   onTodosChange={setTodos}
+                  listView={listView}
                 />
               </div>
             </div>

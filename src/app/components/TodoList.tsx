@@ -27,9 +27,10 @@ type Todo = {
 interface TodoListProps {
   initialTodos: Todo[]
   onTodosChange?: (todos: Todo[]) => void
+  listView: 'horizontal' | 'vertical'
 }
 
-export default function TodoList({ initialTodos, onTodosChange }: TodoListProps) {
+export default function TodoList({ initialTodos, onTodosChange, listView }: TodoListProps) {
   const [todos, setTodos] = useState<Todo[]>(initialTodos)
   const [isLoading, setIsLoading] = useState(true)
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({})
@@ -110,38 +111,90 @@ export default function TodoList({ initialTodos, onTodosChange }: TodoListProps)
     }
   }, [userId])
 
+  const createNextRecurringTask = async (todo: Todo) => {
+    if (!todo.repeat_type || !todo.deadline) return;
+
+    const currentDeadline = new Date(todo.deadline);
+    let nextDeadline: Date;
+
+    switch (todo.repeat_type) {
+      case 'daily':
+        nextDeadline = addDays(currentDeadline, 1);
+        break;
+      case 'weekly':
+        nextDeadline = addDays(currentDeadline, 7);
+        break;
+      case 'monthly':
+        nextDeadline = new Date(currentDeadline.setMonth(currentDeadline.getMonth() + 1));
+        break;
+      default:
+        return;
+    }
+
+    // Проверяем, не превышает ли следующая дата дату окончания повторений
+    if (todo.repeat_ends && isAfter(nextDeadline, new Date(todo.repeat_ends))) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('todos')
+      .insert({
+        name: todo.name,
+        done: false,
+        deadline: nextDeadline.toISOString(),
+        telegram_id: userId,
+        comment: todo.comment,
+        repeat_type: todo.repeat_type,
+        repeat_ends: todo.repeat_ends
+      });
+
+    if (error) {
+      console.error('Error creating next recurring task:', error);
+      toast.error('Не удалось создать следующую повторяющуюся задачу');
+    }
+  };
+
   const handleToggle = async (id: string) => {
-    setLoadingState(id, true)
+    setLoadingState(id, true);
     try {
-      const todo = todos.find(t => t.id === id)
-      if (!todo) return
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+
+      const newDoneState = !todo.done;
 
       // Оптимистичное обновление
       setTodos(current => 
-        current.map(t => t.id === id ? { ...t, done: !t.done } : t)
-      )
+        current.map(t => t.id === id ? { ...t, done: newDoneState } : t)
+      );
 
       const { error } = await supabase
         .from('todos')
-        .update({ done: !todo.done })
+        .update({ done: newDoneState })
         .eq('id', id)
-        .eq('telegram_id', userId)
+        .eq('telegram_id', userId);
       
       if (error) {
         // Откатываем изменения при ошибке
         setTodos(current => 
           current.map(t => t.id === id ? { ...t, done: todo.done } : t)
-        )
-        console.error('Error updating todo:', error)
-        toast.error('Не удалось обновить статус задачи')
+        );
+        console.error('Error updating todo:', error);
+        toast.error('Не удалось обновить статус задачи');
+        return;
       }
+
+      // Если задача отмечена как выполненная и это повторяющаяся задача
+      if (newDoneState && todo.repeat_type) {
+        await createNextRecurringTask(todo);
+      }
+
     } catch (error) {
-      console.error('Error:', error)
-      toast.error('Что-то пошло не так')
+      console.error('Error:', error);
+      toast.error('Что-то пошло не так');
     } finally {
-      setLoadingState(id, false)
+      setLoadingState(id, false);
     }
-  }
+  };
 
   const handleMove = async (id: string, type: 'plus2h' | 'plus1d') => {
     setLoadingState(id, true)
@@ -228,7 +281,12 @@ export default function TodoList({ initialTodos, onTodosChange }: TodoListProps)
 
   return (
     <div className="flex-1">
-      <div className="flex gap-4 pb-4 snap-x snap-mandatory overflow-x-auto">
+      <div className={`
+        ${listView === 'horizontal' 
+          ? 'flex gap-4 pb-4 snap-x snap-mandatory overflow-x-auto' 
+          : 'grid grid-cols-1 gap-3 w-full'
+        }
+      `}>
         {todos.map((todo) => {
           const deadlineDate = new Date(todo.deadline)
           const isOverdue = !todo.done && isAfter(new Date(), deadlineDate)
@@ -240,12 +298,15 @@ export default function TodoList({ initialTodos, onTodosChange }: TodoListProps)
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: listView === 'horizontal' ? 1.02 : 1 }}
+              whileTap={{ scale: listView === 'horizontal' ? 0.98 : 0.995 }}
               onClick={() => setSelectedTodo(todo)}
               className={`
-                flex flex-col gap-4 p-6 rounded-2xl backdrop-blur-sm border snap-start
-                min-w-[280px] max-w-[280px] transition-all duration-300 cursor-pointer
+                backdrop-blur-sm border transition-all duration-300 cursor-pointer
+                ${listView === 'horizontal'
+                  ? 'flex flex-col gap-4 p-6 rounded-2xl snap-start min-w-[280px] max-w-[280px]'
+                  : 'flex flex-col gap-2 p-4 rounded-xl'
+                }
                 ${isLoading ? 'opacity-50' : ''}
                 ${todo.done 
                   ? 'text-white/40 line-through border-white/5 bg-white/5' 
@@ -255,8 +316,11 @@ export default function TodoList({ initialTodos, onTodosChange }: TodoListProps)
                 }
               `}
             >
-              {/* Task Name */}
-              <div className="flex items-start gap-3">
+              {/* Task Name and Checkbox */}
+              <div className={`
+                flex items-start gap-3
+                ${listView === 'horizontal' ? '' : 'w-full'}
+              `}>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -284,75 +348,139 @@ export default function TodoList({ initialTodos, onTodosChange }: TodoListProps)
                     </motion.div>
                   )}
                 </motion.button>
-                <span className="flex-1 text-lg">{todo.name}</span>
-              </div>
-
-              {/* Deadline */}
-              <div className="flex items-center gap-2 text-sm text-white/60">
-                <MdOutlineCalendarToday className="w-4 h-4" />
-                <span>{format(new Date(todo.deadline), 'd MMMM, HH:mm', { locale: ru })}</span>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
-                {/* Move Buttons */}
-                <div className="flex gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleMove(todo.id, 'plus2h')
-                    }}
-                    disabled={isLoading}
-                    className={`
-                      p-2 rounded-lg hover:bg-white/5 transition-all duration-300 group
-                      ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
-                    `}
-                    title="+2 часа"
-                  >
-                    <MdOutlineAccessTime className="w-5 h-5" />
-                    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 
-                      px-2 py-1 text-xs bg-black/80 rounded whitespace-nowrap">+2 часа</span>
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleMove(todo.id, 'plus1d')
-                    }}
-                    disabled={isLoading}
-                    className={`
-                      p-2 rounded-lg hover:bg-white/5 transition-all duration-300 group
-                      ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
-                    `}
-                    title="+1 день"
-                  >
-                    <MdOutlineCalendarToday className="w-5 h-5" />
-                    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 
-                      px-2 py-1 text-xs bg-black/80 rounded whitespace-nowrap">+1 день</span>
-                  </motion.button>
+                <div className="flex-1">
+                  <span className={`${listView === 'horizontal' ? 'text-lg' : 'text-base'}`}>
+                    {todo.name}
+                  </span>
+                  {listView === 'vertical' && todo.comment && (
+                    <div className="text-sm text-white/40 mt-1">{todo.comment}</div>
+                  )}
                 </div>
-
-                {/* Delete Button */}
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleDelete(todo.id)
-                  }}
-                  disabled={isLoading}
-                  className={`
-                    p-2 rounded-lg hover:bg-rose-500/10 text-rose-400/60 hover:text-rose-400 
-                    transition-all duration-300
-                    ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
-                  `}
-                >
-                  <MdDelete className="w-5 h-5" />
-                </motion.button>
               </div>
+
+              {/* Deadline and Actions */}
+              {listView === 'horizontal' ? (
+                <>
+                  {/* Horizontal view - existing code */}
+                  <div className="flex items-center gap-2 text-sm text-white/60">
+                    <MdOutlineCalendarToday className="w-4 h-4" />
+                    <span>{format(new Date(todo.deadline), 'd MMMM, HH:mm', { locale: ru })}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+                    {/* Move Buttons */}
+                    <div className="flex gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMove(todo.id, 'plus2h')
+                        }}
+                        disabled={isLoading}
+                        className={`
+                          p-2 rounded-lg hover:bg-white/5 transition-all duration-300 group
+                          ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                        `}
+                        title="+2 часа"
+                      >
+                        <MdOutlineAccessTime className="w-5 h-5" />
+                        <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 
+                          px-2 py-1 text-xs bg-black/80 rounded whitespace-nowrap">+2 часа</span>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMove(todo.id, 'plus1d')
+                        }}
+                        disabled={isLoading}
+                        className={`
+                          p-2 rounded-lg hover:bg-white/5 transition-all duration-300 group
+                          ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                        `}
+                        title="+1 день"
+                      >
+                        <MdOutlineCalendarToday className="w-5 h-5" />
+                        <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 
+                          px-2 py-1 text-xs bg-black/80 rounded whitespace-nowrap">+1 день</span>
+                      </motion.button>
+                    </div>
+
+                    {/* Delete Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(todo.id)
+                      }}
+                      disabled={isLoading}
+                      className={`
+                        p-2 rounded-lg hover:bg-rose-500/10 text-rose-400/60 hover:text-rose-400 
+                        transition-all duration-300
+                        ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                      `}
+                    >
+                      <MdDelete className="w-5 h-5" />
+                    </motion.button>
+                  </div>
+                </>
+              ) : (
+                /* Vertical view - compact actions */
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 text-sm text-white/60">
+                      <MdOutlineCalendarToday className="w-4 h-4" />
+                      <span>{format(new Date(todo.deadline), 'd MMM, HH:mm', { locale: ru })}</span>
+                    </div>
+                    {todo.repeat_type && (
+                      <div className="text-white/40">
+                        <MdOutlineRepeat className="w-4 h-4" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleMove(todo.id, 'plus2h')
+                      }}
+                      disabled={isLoading}
+                      className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                    >
+                      <MdOutlineAccessTime className="w-4 h-4 text-white/60" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleMove(todo.id, 'plus1d')
+                      }}
+                      disabled={isLoading}
+                      className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                    >
+                      <MdOutlineCalendarToday className="w-4 h-4 text-white/60" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(todo.id)
+                      }}
+                      disabled={isLoading}
+                      className="p-1.5 rounded-lg hover:bg-rose-500/10 text-rose-400/60 hover:text-rose-400 transition-colors"
+                    >
+                      <MdDelete className="w-4 h-4" />
+                    </motion.button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )
         })}
