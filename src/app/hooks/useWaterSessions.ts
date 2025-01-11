@@ -1,8 +1,9 @@
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useMemo, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { UserIdContext } from '@/app/contexts/UserContext'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import debounce from 'lodash/debounce'
 
 interface WaterSession {
   id: number
@@ -18,7 +19,7 @@ export function useWaterSessions() {
   const [sessions, setSessions] = useState<WaterSession[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     if (!userId) return
 
     try {
@@ -68,7 +69,21 @@ export function useWaterSessions() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [userId])
+
+  const debouncedFetch = useMemo(
+    () => debounce(fetchSessions, 1000),
+    [fetchSessions]
+  )
+
+  useEffect(() => {
+    if (userId) {
+      debouncedFetch()
+    }
+    return () => {
+      debouncedFetch.cancel()
+    }
+  }, [userId, debouncedFetch])
 
   const addWater = async (amount: number, date?: Date) => {
     if (!userId) return
@@ -99,16 +114,10 @@ export function useWaterSessions() {
     }
   }
 
-  useEffect(() => {
-    if (userId) {
-      fetchSessions()
-    }
-  }, [userId])
-
-  return {
+  return useMemo(() => ({
     sessions,
     isLoading,
     addWater,
     refresh: fetchSessions
-  }
+  }), [sessions, isLoading, userId, fetchSessions])
 } 

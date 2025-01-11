@@ -9,8 +9,8 @@ import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { UserIdContext } from '@/app/contexts/UserContext'
 import { useContext } from 'react'
-import { IoTimeOutline } from 'react-icons/io5'
-import { MdOutlineCalendarToday, MdCheck, MdOutlineAccessTime, MdDelete } from 'react-icons/md'
+import { IoTimeOutline, IoCloseCircleOutline } from 'react-icons/io5'
+import { MdOutlineCalendarToday, MdCheck, MdOutlineAccessTime, MdDelete, MdOutlineRepeat } from 'react-icons/md'
 
 type Todo = {
   id: string
@@ -19,6 +19,9 @@ type Todo = {
   created_at: string
   deadline: string
   telegram_id: number
+  comment?: string
+  repeat_type?: 'daily' | 'weekly' | 'monthly'
+  repeat_ends?: string
 }
 
 interface TodoListProps {
@@ -30,6 +33,7 @@ export default function TodoList({ initialTodos, onTodosChange }: TodoListProps)
   const [todos, setTodos] = useState<Todo[]>(initialTodos)
   const [isLoading, setIsLoading] = useState(true)
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({})
+  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null)
   const userId = useContext(UserIdContext)
 
   const setLoadingState = (id: string, state: boolean) => {
@@ -238,9 +242,10 @@ export default function TodoList({ initialTodos, onTodosChange }: TodoListProps)
               exit={{ opacity: 0, y: -20 }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              onClick={() => setSelectedTodo(todo)}
               className={`
                 flex flex-col gap-4 p-6 rounded-2xl backdrop-blur-sm border snap-start
-                min-w-[280px] max-w-[280px] transition-all duration-300
+                min-w-[280px] max-w-[280px] transition-all duration-300 cursor-pointer
                 ${isLoading ? 'opacity-50' : ''}
                 ${todo.done 
                   ? 'text-white/40 line-through border-white/5 bg-white/5' 
@@ -255,7 +260,10 @@ export default function TodoList({ initialTodos, onTodosChange }: TodoListProps)
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => handleToggle(todo.id)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleToggle(todo.id)
+                  }}
                   disabled={isLoading}
                   className={`
                     flex items-center justify-center w-6 h-6 rounded-lg border transition-all duration-300
@@ -292,28 +300,38 @@ export default function TodoList({ initialTodos, onTodosChange }: TodoListProps)
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => handleMove(todo.id, 'plus2h')}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleMove(todo.id, 'plus2h')
+                    }}
                     disabled={isLoading}
                     className={`
-                      p-2 rounded-lg hover:bg-white/5 transition-all duration-300
+                      p-2 rounded-lg hover:bg-white/5 transition-all duration-300 group
                       ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
                     `}
                     title="+2 часа"
                   >
                     <MdOutlineAccessTime className="w-5 h-5" />
+                    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 
+                      px-2 py-1 text-xs bg-black/80 rounded whitespace-nowrap">+2 часа</span>
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => handleMove(todo.id, 'plus1d')}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleMove(todo.id, 'plus1d')
+                    }}
                     disabled={isLoading}
                     className={`
-                      p-2 rounded-lg hover:bg-white/5 transition-all duration-300
+                      p-2 rounded-lg hover:bg-white/5 transition-all duration-300 group
                       ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
                     `}
                     title="+1 день"
                   >
                     <MdOutlineCalendarToday className="w-5 h-5" />
+                    <span className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 
+                      px-2 py-1 text-xs bg-black/80 rounded whitespace-nowrap">+1 день</span>
                   </motion.button>
                 </div>
 
@@ -321,7 +339,10 @@ export default function TodoList({ initialTodos, onTodosChange }: TodoListProps)
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => handleDelete(todo.id)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDelete(todo.id)
+                  }}
                   disabled={isLoading}
                   className={`
                     p-2 rounded-lg hover:bg-rose-500/10 text-rose-400/60 hover:text-rose-400 
@@ -336,6 +357,61 @@ export default function TodoList({ initialTodos, onTodosChange }: TodoListProps)
           )
         })}
       </div>
+
+      {/* Task Details Modal */}
+      <AnimatePresence>
+        {selectedTodo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedTodo(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#2A2A2A] rounded-2xl p-6 max-w-lg w-full space-y-4"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-medium">{selectedTodo.name}</h3>
+                <button
+                  onClick={() => setSelectedTodo(null)}
+                  className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+                >
+                  <IoCloseCircleOutline className="w-6 h-6" />
+                </button>
+              </div>
+
+              {selectedTodo.comment && (
+                <div className="space-y-2">
+                  <h4 className="text-sm text-white/60">Заметка</h4>
+                  <p className="text-white/80 bg-white/5 p-4 rounded-xl">{selectedTodo.comment}</p>
+                </div>
+              )}
+
+              {selectedTodo.repeat_type && (
+                <div className="flex items-center gap-2 text-sm text-white/60">
+                  <MdOutlineRepeat className="w-4 h-4" />
+                  <span>
+                    {selectedTodo.repeat_type === 'daily' && 'Каждый день'}
+                    {selectedTodo.repeat_type === 'weekly' && 'Каждую неделю'}
+                    {selectedTodo.repeat_type === 'monthly' && 'Каждый месяц'}
+                    {selectedTodo.repeat_ends && ` до ${format(new Date(selectedTodo.repeat_ends), 'd MMMM', { locale: ru })}`}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 text-sm text-white/60">
+                <MdOutlineCalendarToday className="w-4 h-4" />
+                <span>{format(new Date(selectedTodo.deadline), 'd MMMM, HH:mm', { locale: ru })}</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 } 

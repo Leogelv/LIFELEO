@@ -1,9 +1,10 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { format, isAfter } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { Icon } from '@iconify/react'
+import { useState } from 'react'
 
 interface Todo {
   id: string
@@ -11,6 +12,7 @@ interface Todo {
   done: boolean
   deadline: string
   telegram_id: number
+  comment?: string
 }
 
 interface DraggableTaskProps {
@@ -22,6 +24,7 @@ interface DraggableTaskProps {
 
 export function DraggableTask({ task, onMove, onDrag, onDragEnd }: DraggableTaskProps) {
   const isOverdue = !task.done && isAfter(new Date(), new Date(task.deadline))
+  const [showComment, setShowComment] = useState(false)
 
   return (
     <motion.div
@@ -44,7 +47,7 @@ export function DraggableTask({ task, onMove, onDrag, onDragEnd }: DraggableTask
         onDragEnd(rect)
       }}
       className={`
-        flex items-center gap-1 p-1.5 rounded-lg backdrop-blur-sm border
+        relative flex flex-col gap-1 p-1.5 rounded-lg backdrop-blur-sm border
         cursor-move touch-none select-none text-[10px] sm:text-xs
         ${task.done 
           ? 'text-[#E8D9C5]/40 line-through border-[#E8D9C5]/5 bg-gradient-to-r from-[#E8D9C5]/[0.02] to-[#E8D9C5]/[0.05]' 
@@ -54,10 +57,40 @@ export function DraggableTask({ task, onMove, onDrag, onDragEnd }: DraggableTask
         }
       `}
     >
-      <Icon icon="solar:minimalistic-dots-vertical-outline" className="w-2 h-2 sm:w-3 sm:h-3 flex-shrink-0" />
-      <span className="truncate" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
-        {task.name}
-      </span>
+      <div className="flex items-center gap-1">
+        <Icon icon="solar:minimalistic-dots-vertical-outline" className="w-2 h-2 sm:w-3 sm:h-3 flex-shrink-0" />
+        <span className="break-words" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+          {task.name}
+        </span>
+        {task.comment && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowComment(!showComment)
+            }}
+            className="ml-auto"
+          >
+            <Icon 
+              icon="solar:notes-outline" 
+              className={`w-3 h-3 transition-colors ${showComment ? 'text-[#E8D9C5]' : 'text-[#E8D9C5]/60'}`} 
+            />
+          </button>
+        )}
+      </div>
+      
+      {/* Заметка */}
+      <AnimatePresence>
+        {showComment && task.comment && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="text-[10px] text-[#E8D9C5]/60 mt-1 border-t border-[#E8D9C5]/10 pt-1"
+          >
+            {task.comment}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 } 

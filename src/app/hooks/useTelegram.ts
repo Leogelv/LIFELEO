@@ -8,11 +8,17 @@ export const useTelegram = () => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [userData, setUserData] = useState<TelegramUser | null>(null)
 
-  // Проверяем, есть ли объект window.Telegram?.WebApp
-  const isTelegram = typeof window !== 'undefined' && window.Telegram?.WebApp
+  // Проверяем, запущены ли мы в локалхосте
+  const isLocalhost = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1'
+  )
 
-  // Если мы в тестовой среде, используем тестовый ID
-  const userId = isTelegram && window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 375634162
+  // Проверяем, есть ли объект window.Telegram?.WebApp и не локалхост ли это
+  const isTelegram = !isLocalhost && typeof window !== 'undefined' && window.Telegram?.WebApp
+
+  // Если мы в тестовой среде или локалхосте, используем тестовый ID
+  const userId = isTelegram ? window.Telegram?.WebApp?.initDataUnsafe?.user?.id : 375634162
 
   useEffect(() => {
     if (!isTelegram) {
@@ -32,17 +38,26 @@ export const useTelegram = () => {
       setIsExpanded(true)
     }
 
-    tg.ready()
-    tg.expand()
-    tg.requestFullscreen?.()
-    
-    // Устанавливаем цвет хедера и отключаем свайпы только в телеграме
-    tg.setHeaderColor('#1A1A1A')
-    tg.isVerticalSwipesEnabled = true
-    tg.disableVerticalSwipes()
+    try {
+      tg.ready()
+      tg.expand()
+      
+      // Безопасный вызов requestFullscreen только если метод существует
+      if (typeof tg.requestFullscreen === 'function') {
+        tg.requestFullscreen()
+      }
+      
+      // Устанавливаем цвет хедера и отключаем свайпы только в телеграме
+      tg.setHeaderColor('#1A1A1A')
+      tg.isVerticalSwipesEnabled = true
+      tg.disableVerticalSwipes()
 
-    onReady()
-    onExpand()
+      onReady()
+      onExpand()
+    } catch (error) {
+      console.error('Error initializing Telegram WebApp:', error)
+      setIsReady(true)
+    }
 
     return () => {
       // Очистка, если нужна

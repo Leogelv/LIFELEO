@@ -40,7 +40,9 @@ export function AddHabitModal({ isOpen, onClose, mode, withDateTime = false, onS
         case 'sport':
           data = {
             telegram_id,
-            date: withDateTime ? date : format(new Date(), 'yyyy-MM-dd'),
+            date: withDateTime 
+              ? format(new Date(`${date}T${time}`), 'yyyy-MM-dd')
+              : format(new Date(), 'yyyy-MM-dd'),
             exercise_type: 'general',
             duration: Number(duration),
             intensity,
@@ -52,7 +54,9 @@ export function AddHabitModal({ isOpen, onClose, mode, withDateTime = false, onS
         case 'water':
           data = {
             telegram_id,
-            date: withDateTime ? date : format(new Date(), 'yyyy-MM-dd'),
+            date: withDateTime 
+              ? format(new Date(`${date}T${time}`), 'yyyy-MM-dd')
+              : format(new Date(), 'yyyy-MM-dd'),
             amount: Number(amount),
             time_of_day: withDateTime ? time : format(new Date(), 'HH:mm'),
             notes: withDateTime ? notes : undefined
@@ -69,7 +73,7 @@ export function AddHabitModal({ isOpen, onClose, mode, withDateTime = false, onS
 
           data = {
             telegram_id,
-            date: format(sleepStart, 'yyyy-MM-dd'),
+            date: sleepStart.toISOString().split('T')[0],
             sleep_start: sleepStart.toISOString(),
             sleep_end: now.toISOString(),
             quality,

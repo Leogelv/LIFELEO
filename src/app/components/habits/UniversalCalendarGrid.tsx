@@ -1,13 +1,14 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isAfter, isToday } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isAfter, isToday, addDays, startOfWeek, endOfWeek } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { DraggableTask } from './DraggableTask'
 import { Icon } from '@iconify/react'
 
 export type CalendarMode = 'sport' | 'water' | 'sleep' | 'tasks'
+export type CalendarView = 'month' | '3days' | 'week'
 
 interface Session {
   id: number
@@ -28,6 +29,7 @@ interface Todo {
   done: boolean
   deadline: string
   telegram_id: number
+  comment?: string
 }
 
 interface UniversalCalendarGridProps {
@@ -35,6 +37,8 @@ interface UniversalCalendarGridProps {
   sessions: Session[]
   todos?: Todo[]
   mode: CalendarMode
+  view?: CalendarView
+  onViewChange?: (view: CalendarView) => void
   onAddNow?: () => void
   onAddWithDate?: () => void
   onTaskMove?: (taskId: string, newDate: Date) => void
@@ -46,6 +50,8 @@ export function UniversalCalendarGrid({
   sessions, 
   todos = [],
   mode,
+  view = 'month',
+  onViewChange,
   onAddNow,
   onAddWithDate,
   onTaskMove,
@@ -55,22 +61,52 @@ export function UniversalCalendarGrid({
   const monthEnd = endOfMonth(currentDate)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
 
+  // Получаем дни в зависимости от выбранного вида
+  const getViewDays = () => {
+    switch (view) {
+      case '3days':
+        return eachDayOfInterval({
+          start: currentDate,
+          end: addDays(currentDate, 2)
+        })
+      case 'week':
+        return eachDayOfInterval({
+          start: startOfWeek(currentDate, { locale: ru }),
+          end: endOfWeek(currentDate, { locale: ru })
+        })
+      default:
+        return days
+    }
+  }
+
+  const viewDays = getViewDays()
+
   // Рендер спортивной сессии
   const renderSportSession = (daySessions: Session[]) => {
     if (!daySessions.length) return null
-    const session = daySessions[0]
+    
+    // Считаем общую длительность всех тренировок
+    const totalDuration = daySessions.reduce((acc, session) => acc + (session.duration || 0), 0)
+    
+    // Определяем максимальную интенсивность
+    const maxIntensity = daySessions.reduce((max, session) => {
+      const intensityMap = { 'low': 1, 'medium': 2, 'high': 3 }
+      const currentIntensity = intensityMap[session.intensity || 'low']
+      return currentIntensity > max ? currentIntensity : max
+    }, 1)
+    
+    const intensityClass = maxIntensity === 3 ? 'text-[#E8D9C5]' :
+                          maxIntensity === 2 ? 'text-[#E8D9C5]/80' :
+                          'text-[#E8D9C5]/60'
+
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <Icon 
           icon="solar:dumbbell-small-outline" 
-          className={`w-8 h-8 ${
-            session.intensity === 'high' ? 'text-[#E8D9C5]' :
-            session.intensity === 'medium' ? 'text-[#E8D9C5]/80' :
-            'text-[#E8D9C5]/60'
-          }`} 
+          className={`w-8 h-8 ${intensityClass}`} 
         />
         <span className="mt-2 text-sm font-light text-[#E8D9C5]/80">
-          {session.duration}м
+          {totalDuration}м
         </span>
       </div>
     )
@@ -189,18 +225,16 @@ export function UniversalCalendarGrid({
     if (!dayTasks.length) return null
 
     return (
-      <div className="h-full p-2" style={{ overflow: 'visible' }}>
-        <div className="h-full space-y-1" style={{ overflow: 'visible' }}>
-          {dayTasks.map((task) => (
-            <DraggableTask 
-              key={task.id}
-              task={task}
-              onMove={onTaskMove!}
-              onDrag={(rect) => handleTaskDrag(rect, task.id)}
-              onDragEnd={(rect) => handleTaskDragEnd(rect, task.id)}
-            />
-          ))}
-        </div>
+      <div className="flex flex-col gap-1 p-2" style={{ overflow: 'visible' }}>
+        {dayTasks.map((task) => (
+          <DraggableTask 
+            key={task.id}
+            task={task}
+            onMove={onTaskMove!}
+            onDrag={(rect) => handleTaskDrag(rect, task.id)}
+            onDragEnd={(rect) => handleTaskDragEnd(rect, task.id)}
+          />
+        ))}
       </div>
     )
   }
@@ -301,86 +335,126 @@ export function UniversalCalendarGrid({
   }
 
   return (
-    <div className="w-full space-y-8" style={{ overflow: 'visible' }}>
-      <div className="w-full relative" style={{ overflow: 'visible' }}>
-        {/* Навигация по месяцам */}
-        <div className="flex items-center justify-between mb-8">
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onMonthChange?.(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
-            className="p-2 rounded-lg hover:bg-[#E8D9C5]/5 transition-colors"
-          >
-            <Icon icon="solar:arrow-left-outline" className="w-6 h-6 text-[#E8D9C5]/60" />
-          </motion.button>
-          
-          <h2 className="text-xl font-light text-[#E8D9C5]">
-            {format(currentDate, 'LLLL yyyy', { locale: ru })}
-          </h2>
-          
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onMonthChange?.(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
-            className="p-2 rounded-lg hover:bg-[#E8D9C5]/5 transition-colors"
-          >
-            <Icon icon="solar:arrow-right-outline" className="w-6 h-6 text-[#E8D9C5]/60" />
-          </motion.button>
-        </div>
-
-        {/* Дни недели */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mb-4">
-          {['Пн', 'Вт', 'Ср', 'Чт'].map(day => (
-            <div key={day} className="h-12 flex items-center justify-center">
-              <span className="text-lg font-light text-[#E8D9C5]/60">{day}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Сетка дней */}
-        <motion.div 
-          key={currentDate.toISOString()}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 20 }}
-          className="grid grid-cols-3 sm:grid-cols-4 gap-4" 
-          style={{ overflow: 'visible' }}
+    <div className="space-y-4">
+      {/* Переключатель видов */}
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={() => onViewChange?.('month')}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+            view === 'month' 
+              ? 'bg-[#E8D9C5]/20 text-[#E8D9C5]' 
+              : 'text-[#E8D9C5]/60 hover:text-[#E8D9C5]/80'
+          }`}
         >
-          {days.map((day, i) => {
-            const isToday = isSameDay(day, new Date())
-            return (
-              <motion.div
-                key={day.toISOString()}
-                data-calendar-day={day.toISOString()}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.02 }}
-                className="aspect-square relative"
-                style={{ overflow: 'visible' }}
-              >
-                <div className={`
-                  absolute inset-0 rounded-2xl backdrop-blur-sm border
-                  transition-all duration-300
-                  ${isToday 
-                    ? 'bg-[#E8D9C5]/5 border-[#E8D9C5]/20 ring-1 ring-[#E8D9C5]/20' 
-                    : 'bg-[#E8D9C5]/[0.02] border-[#E8D9C5]/10 hover:border-[#E8D9C5]/20'
-                  }
-                `} style={{ overflow: 'visible' }}>
+          Месяц
+        </button>
+        <button
+          onClick={() => onViewChange?.('3days')}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+            view === '3days' 
+              ? 'bg-[#E8D9C5]/20 text-[#E8D9C5]' 
+              : 'text-[#E8D9C5]/60 hover:text-[#E8D9C5]/80'
+          }`}
+        >
+          3 дня
+        </button>
+        <button
+          onClick={() => onViewChange?.('week')}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+            view === 'week' 
+              ? 'bg-[#E8D9C5]/20 text-[#E8D9C5]' 
+              : 'text-[#E8D9C5]/60 hover:text-[#E8D9C5]/80'
+          }`}
+        >
+          Неделя
+        </button>
+      </div>
+
+      {/* Календарь */}
+      <div className="relative">
+        <div className="w-full relative" style={{ overflow: 'visible' }}>
+          {/* Навигация по месяцам */}
+          <div className="flex items-center justify-between mb-8">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onMonthChange?.(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
+              className="p-2 rounded-lg hover:bg-[#E8D9C5]/5 transition-colors"
+            >
+              <Icon icon="solar:arrow-left-outline" className="w-6 h-6 text-[#E8D9C5]/60" />
+            </motion.button>
+            
+            <h2 className="text-xl font-light text-[#E8D9C5]">
+              {format(currentDate, 'LLLL yyyy', { locale: ru })}
+            </h2>
+            
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onMonthChange?.(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
+              className="p-2 rounded-lg hover:bg-[#E8D9C5]/5 transition-colors"
+            >
+              <Icon icon="solar:arrow-right-outline" className="w-6 h-6 text-[#E8D9C5]/60" />
+            </motion.button>
+          </div>
+
+          {/* Дни недели */}
+          <div className="hidden sm:grid grid-cols-7 gap-4 mb-4">
+            {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(day => (
+              <div key={day} className="h-8 flex items-center justify-center">
+                <span className="text-sm font-light text-[#E8D9C5]/60">{day}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Сетка дней */}
+          <motion.div 
+            key={currentDate.toISOString()}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="grid grid-cols-1 sm:grid-cols-7 gap-2 sm:gap-4" 
+            style={{ overflow: 'visible' }}
+          >
+            {viewDays.map((day, i) => {
+              const isToday = isSameDay(day, new Date())
+              const dayTasks = todos?.filter(todo => isSameDay(new Date(todo.deadline), day)) || []
+              const hasContent = dayTasks.length > 0
+
+              return (
+                <motion.div
+                  key={day.toISOString()}
+                  data-calendar-day={day.toISOString()}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.02 }}
+                  className={`
+                    min-h-[120px] w-full rounded-2xl backdrop-blur-sm border
+                    transition-all duration-300 flex flex-col
+                    ${hasContent ? 'h-auto' : ''}
+                    ${isToday 
+                      ? 'bg-[#E8D9C5]/5 border-[#E8D9C5]/20 ring-1 ring-[#E8D9C5]/20' 
+                      : 'bg-[#E8D9C5]/[0.02] border-[#E8D9C5]/10 hover:border-[#E8D9C5]/20'
+                    }
+                  `}
+                  style={{ overflow: 'visible' }}
+                >
                   {/* Число */}
                   <div className={`
-                    absolute top-3 left-3 transition-colors duration-300
+                    p-3 flex items-center gap-2
                     ${isToday ? 'text-[#E8D9C5]' : 'text-[#E8D9C5]/60'}
                   `}>
                     <span className="text-lg font-light">{format(day, 'd')}</span>
+                    <span className="text-sm font-light sm:hidden">{format(day, 'EEEE', { locale: ru })}</span>
                   </div>
 
                   {/* Контент */}
-                  <div className="absolute inset-0 pt-12" style={{ overflow: 'visible' }}>
+                  <div className="flex-1 w-full" style={{ overflow: 'visible' }}>
                     {renderDayContent(day)}
                   </div>
-                </div>
-              </motion.div>
-            )
-          })}
-        </motion.div>
+                </motion.div>
+              )
+            })}
+          </motion.div>
+        </div>
       </div>
     </div>
   )

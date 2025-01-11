@@ -1,8 +1,9 @@
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useMemo, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { UserIdContext } from '@/app/contexts/UserContext'
 import { toast } from 'sonner'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
+import debounce from 'lodash/debounce'
 
 interface SportSession {
   id: number
@@ -19,7 +20,7 @@ export function useSportSessions() {
   const [sessions, setSessions] = useState<SportSession[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     if (!userId) return
 
     try {
@@ -37,12 +38,33 @@ export function useSportSessions() {
       if (error) throw error
 
       if (data) {
-        console.log('🏃‍♂️ Сырые данные из базы:', data.map(d => ({
-          ...d,
-          dateFormatted: format(new Date(d.date), 'yyyy-MM-dd')
-        })))
+        console.log('📊 Raw data from DB:', data)
         
-        setSessions(data)
+        const formattedData = data.map(session => {
+          const date = new Date(session.date)
+          console.log('📅 Processing date:', {
+            original: session.date,
+            parsed: date,
+            offset: date.getTimezoneOffset(),
+            timestamp: date.getTime()
+          })
+          
+          const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
+          const formattedDate = localDate.toISOString().split('T')[0]
+          
+          console.log('🎯 Formatted date:', {
+            localDate,
+            formattedDate
+          })
+          
+          return {
+            ...session,
+            date: formattedDate
+          }
+        })
+        
+        console.log('🏃‍♂️ Final formatted data:', formattedData)
+        setSessions(formattedData)
       }
     } catch (err) {
       console.error('Error fetching sport sessions:', err)
@@ -50,7 +72,21 @@ export function useSportSessions() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [userId])
+
+  const debouncedFetch = useMemo(
+    () => debounce(fetchSessions, 1000),
+    [fetchSessions]
+  )
+
+  useEffect(() => {
+    if (userId) {
+      debouncedFetch()
+    }
+    return () => {
+      debouncedFetch.cancel()
+    }
+  }, [userId, debouncedFetch])
 
   const addSport = async (exercise: string, duration: number, intensity: 'low' | 'medium' | 'high', date?: Date) => {
     if (!userId) return
@@ -58,15 +94,24 @@ export function useSportSessions() {
     try {
       const supabase = createClient()
       
+      const formattedDate = date 
+        ? format(date, 'yyyy-MM-dd')
+        : format(new Date(), 'yyyy-MM-dd')
+        
+      console.log('📝 Adding sport entry:', {
+        providedDate: date,
+        formattedDate,
+        exercise,
+        duration
+      })
+      
       const sportEntry = {
         telegram_id: userId,
-        date: date ? format(date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+        date: formattedDate,
         exercise_type: exercise,
         duration,
         intensity,
       }
-      
-      console.log('🏃‍♂️ Adding sport entry:', sportEntry)
       
       const { error } = await supabase
         .from('sport_sessions')
@@ -82,16 +127,10 @@ export function useSportSessions() {
     }
   }
 
-  useEffect(() => {
-    if (userId) {
-      fetchSessions()
-    }
-  }, [userId])
-
-  return {
+  return useMemo(() => ({
     sessions,
     isLoading,
     addSport,
     refresh: fetchSessions
-  }
+  }), [sessions, isLoading, userId, fetchSessions])
 } 
