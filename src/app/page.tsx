@@ -30,7 +30,7 @@ export default function Home() {
   console.log('💪 Sport total:', todaySport)
 
   return (
-    <UserIdProvider value={userId}>
+    <UserIdProvider value={userId || 375634162}>
       <TelegramScript />
       <main className={`min-h-screen relative overflow-hidden px-3 sm:px-6 pb-12 sm:pb-20 ${isExpanded ? 'pt-[100px]' : 'pt-6'}`}>
         {/* Оптимизированные CSS блобы */}
@@ -122,7 +122,6 @@ export default function Home() {
               unit="мл"
               className="min-h-[100px] sm:min-h-[180px]"
             />
-            {console.log('🎯 Sport card amount:', todaySport)}
             <HabitCard 
               icon="solar:dumbbell-small-bold"
               title="Спорт"
