@@ -218,6 +218,10 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
           transition-all duration-300 ease-out
           hover:scale-[1.02] hover:shadow-lg
           cursor-pointer
+          before:absolute before:inset-0 
+          before:bg-gradient-to-br before:from-white/[0.03] before:to-transparent
+          after:absolute after:inset-0 
+          after:bg-gradient-to-br after:from-black/[0.05] after:to-transparent
         `}
         onMouseDown={handleLongPress}
         onMouseUp={handlePressEnd}
