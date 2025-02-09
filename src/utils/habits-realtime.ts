@@ -43,7 +43,7 @@ class HabitsRealtimeManager {
   private initChannel() {
     logger.info('🔄 Инициализация realtime каналов для привычек и логов...')
     
-    this.channel = supabase.channel('habits-all-channel')
+    this.channel = supabase.channel('test-logs-channel')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'habits' },
@@ -68,7 +68,7 @@ class HabitsRealtimeManager {
           this.handlePayload({ ...payload, table: 'habit_logs' })
         }
       )
-      .subscribe((status: string) => {
+      .subscribe((status) => {
         logger.info('🔌 Статус подключения к realtime:', status)
         
         if (status === 'SUBSCRIBED') {
