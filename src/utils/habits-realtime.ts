@@ -20,7 +20,7 @@ interface HabitLog {
   created_at: string
 }
 
-type RealtimeCallback = (payload: RealtimePostgresChangesPayload<Habit | HabitLog>) => void
+type RealtimeCallback = (payload: RealtimePostgresChangesPayload<any> & { table: string }) => void
 
 class HabitsRealtimeManager {
   private static instance: HabitsRealtimeManager
@@ -47,12 +47,12 @@ class HabitsRealtimeManager {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'habits' },
-        (payload: RealtimePostgresChangesPayload<Habit>) => this.handlePayload(payload)
+        (payload) => this.handlePayload({ ...payload, table: 'habits' })
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'habit_logs' },
-        (payload: RealtimePostgresChangesPayload<HabitLog>) => this.handlePayload(payload)
+        (payload) => this.handlePayload({ ...payload, table: 'habit_logs' })
       )
       .subscribe((status: string) => {
         logger.info('🔌 Статус подключения к realtime:', status)
@@ -78,7 +78,7 @@ class HabitsRealtimeManager {
       })
   }
 
-  private handlePayload(payload: RealtimePostgresChangesPayload<Habit | HabitLog>) {
+  private handlePayload(payload: RealtimePostgresChangesPayload<any> & { table: string }) {
     this.callbacks.forEach((callbacks, key) => {
       callbacks.forEach(callback => {
         try {
