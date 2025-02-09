@@ -30,6 +30,10 @@ const defaultButtons = {
   breathing: [
     { value: 5, label: '+5 мин' },
     { value: 10, label: '+10 мин' }
+  ],
+  business: [
+    { value: 30, label: '+30 мин' },
+    { value: 60, label: '+60 мин' }
   ]
 } as const
 
