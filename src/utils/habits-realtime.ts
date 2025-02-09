@@ -41,24 +41,52 @@ class HabitsRealtimeManager {
   }
 
   private initChannel() {
-    logger.info('🔄 Инициализация realtime канала для привычек...')
+    logger.info('🔄 Инициализация realtime каналов для привычек и логов...')
     
-    this.channel = supabase.channel('habits-channel')
+    // Создаем отдельные каналы для habits и habit_logs
+    this.channel = supabase.channel('habits-all-channel')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'habits' },
-        (payload) => this.handlePayload({ ...payload, table: 'habits' })
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'habits'
+        },
+        (payload: RealtimePostgresChangesPayload<Habit>) => {
+          logger.debug('📥 Получено изменение в habits:', {
+            event: payload.eventType,
+            new: payload.new,
+            old: payload.old
+          })
+          this.handlePayload({ ...payload, table: 'habits' })
+        }
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'habit_logs' },
-        (payload) => this.handlePayload({ ...payload, table: 'habit_logs' })
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'habit_logs'
+        },
+        (payload: RealtimePostgresChangesPayload<HabitLog>) => {
+          const newLog = payload.new as HabitLog | null
+          const oldLog = payload.old as HabitLog | null
+          
+          logger.debug('📝 Получено изменение в habit_logs:', {
+            event: payload.eventType,
+            habitId: newLog?.habit_id || oldLog?.habit_id,
+            value: newLog?.value,
+            completedAt: newLog?.completed_at
+          })
+          this.handlePayload({ ...payload, table: 'habit_logs' })
+        }
       )
       .subscribe((status: string) => {
         logger.info('🔌 Статус подключения к realtime:', status)
         
         if (status === 'SUBSCRIBED') {
           this.isConnected = true
+          logger.info('✅ Успешно подписались на изменения в habits и habit_logs')
           if (this.reconnectTimer) {
             clearTimeout(this.reconnectTimer)
             this.reconnectTimer = null
@@ -84,7 +112,7 @@ class HabitsRealtimeManager {
         try {
           callback(payload)
         } catch (error) {
-          logger.error('Ошибка в обработчике realtime:', error)
+          logger.error('❌ Ошибка в обработчике realtime:', error)
         }
       })
     })
@@ -108,6 +136,7 @@ class HabitsRealtimeManager {
       this.reconnect()
     }
 
+    logger.debug('✅ Добавлена подписка на realtime события', { key })
     return () => this.unsubscribe(key, callback)
   }
 
@@ -117,6 +146,7 @@ class HabitsRealtimeManager {
       const index = callbacks.indexOf(callback)
       if (index > -1) {
         callbacks.splice(index, 1)
+        logger.debug('🔌 Удалена подписка на realtime события', { key })
       }
       if (callbacks.length === 0) {
         this.callbacks.delete(key)
@@ -126,7 +156,7 @@ class HabitsRealtimeManager {
 
   public cleanup() {
     if (this.channel) {
-      logger.debug('🔌 Отключаемся от realtime канала')
+      logger.debug('🔌 Отключаемся от realtime каналов')
       this.channel.unsubscribe()
     }
     if (this.reconnectTimer) {
