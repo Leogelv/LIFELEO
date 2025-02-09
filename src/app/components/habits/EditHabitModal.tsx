@@ -11,12 +11,33 @@ import { format, subDays } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { habitsRealtime } from '@/utils/habits-realtime'
 import { logger } from '@/utils/logger'
+import { categoryConfig, type HabitCategory } from './config/categoryConfig'
+
+// Дефолтные значения для кнопок по категориям
+const defaultButtons = {
+  water: [
+    { value: 300, label: '+300 мл' },
+    { value: 500, label: '+500 мл' }
+  ],
+  meditation: [
+    { value: 10, label: '+10 мин' },
+    { value: 30, label: '+30 мин' }
+  ],
+  sport: [
+    { value: 30, label: '+30 мин' },
+    { value: 60, label: '+60 мин' }
+  ],
+  breathing: [
+    { value: 5, label: '+5 мин' },
+    { value: 10, label: '+10 мин' }
+  ]
+} as const
 
 interface EditHabitModalProps {
   habit: {
     id: string
     name: string
-    category: string
+    category: HabitCategory
     target_value: number
   }
   onClose: () => void
@@ -36,52 +57,14 @@ interface DailyValue {
   value: number
 }
 
-const categoryConfig = {
-  water: {
-    name: 'Вода',
-    icon: 'solar:glass-water-bold',
-    gradient: 'from-blue-400/20 to-cyan-400/20',
-    border: 'border-blue-400/30',
-    text: 'text-blue-400',
-    unit: 'мл',
-    values: [1000, 1500, 2000, 2500, 3000]
-  },
-  meditation: {
-    name: 'Медитация',
-    icon: 'solar:meditation-bold',
-    gradient: 'from-purple-400/20 to-fuchsia-400/20',
-    border: 'border-purple-400/30',
-    text: 'text-purple-400',
-    unit: 'мин',
-    values: [30, 45, 60, 90, 120]
-  },
-  sport: {
-    name: 'Спорт',
-    icon: 'solar:running-round-bold',
-    gradient: 'from-emerald-400/20 to-teal-400/20',
-    border: 'border-emerald-400/30',
-    text: 'text-emerald-400',
-    unit: 'мин',
-    values: [30, 45, 60, 90, 120]
-  },
-  breathing: {
-    name: 'Дыхание',
-    icon: 'solar:breathing-bold',
-    gradient: 'from-green-400/20 to-emerald-400/20',
-    border: 'border-green-400/30',
-    text: 'text-green-400',
-    unit: 'мин',
-    values: [5, 10, 15, 20, 30]
-  }
-}
-
 export function EditHabitModal({ habit, onClose, onSave }: EditHabitModalProps) {
-  const [editingHabit, setEditingHabit] = useState(habit)
+  const [editedHabit, setEditedHabit] = useState(habit)
   const [stats, setStats] = useState<HabitStats | null>(null)
   const [dailyValues, setDailyValues] = useState<DailyValue[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [valueToAdd, setValueToAdd] = useState<number>(0)
-  const config = categoryConfig[habit.category as keyof typeof categoryConfig]
+  const config = categoryConfig[habit.category]
+  const buttons = defaultButtons[habit.category]
   const [statsView, setStatsView] = useState<'week' | 'month'>('week')
 
   // Загрузка статистики
@@ -220,57 +203,9 @@ export function EditHabitModal({ habit, onClose, onSave }: EditHabitModalProps) 
     }
   }, [habit.id, habit.target_value])
 
-  const handleSave = async () => {
-    try {
-      const { error } = await supabase
-        .from('habits')
-        .update({
-          name: editingHabit.name,
-          target_value: editingHabit.target_value
-        })
-        .eq('id', editingHabit.id)
-
-      if (error) throw error
-
-      onSave(editingHabit)
-      toast.success('Привычка обновлена')
-    } catch (error) {
-      toast.error('Не удалось обновить привычку')
-    }
-  }
-
-  // Удаление всего прогресса
-  const handleDeleteProgress = async () => {
-    if (!confirm('Вы уверены, что хотите удалить весь прогресс? Это действие нельзя отменить.')) {
-      return
-    }
-
-    try {
-      setIsLoading(true)
-      const { error } = await supabase
-        .from('habit_logs')
-        .delete()
-        .eq('habit_id', habit.id)
-
-      if (error) throw error
-
-      toast.success('Прогресс удален')
-      onClose()
-    } catch (error) {
-      toast.error('Не удалось удалить прогресс')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Сброс значений за сегодня
+  // Сброс прогресса за сегодня
   const handleResetToday = async () => {
-    if (!confirm('Сбросить значения за сегодня?')) {
-      return
-    }
-
     try {
-      setIsLoading(true)
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
@@ -282,36 +217,48 @@ export function EditHabitModal({ habit, onClose, onSave }: EditHabitModalProps) 
 
       if (error) throw error
 
-      toast.success('Значения за сегодня сброшены')
-      onClose()
+      toast.success('Прогресс за сегодня сброшен')
     } catch (error) {
-      toast.error('Не удалось сбросить значения')
-    } finally {
-      setIsLoading(false)
+      logger.error('Ошибка при сбросе прогресса', error)
+      toast.error('Не удалось сбросить прогресс')
     }
   }
 
-  // Добавление или вычитание значения
-  const handleAddValue = async (value: number) => {
+  // Полный сброс прогресса
+  const handleDeleteProgress = async () => {
     try {
-      setIsLoading(true)
-      
       const { error } = await supabase
         .from('habit_logs')
-        .insert({
-          habit_id: habit.id,
-          value: value,
-          completed_at: new Date().toISOString()
-        })
+        .delete()
+        .eq('habit_id', habit.id)
 
       if (error) throw error
 
-      toast.success(value > 0 ? 'Значение добавлено' : 'Значение вычтено')
-      onClose()
+      toast.success('Весь прогресс сброшен')
     } catch (error) {
-      toast.error('Не удалось обновить значение')
-    } finally {
-      setIsLoading(false)
+      logger.error('Ошибка при удалении прогресса', error)
+      toast.error('Не удалось удалить прогресс')
+    }
+  }
+
+  // Сохранение изменений
+  const handleSave = async () => {
+    try {
+      const { error } = await supabase
+        .from('habits')
+        .update({
+          name: editedHabit.name,
+          target_value: editedHabit.target_value
+        })
+        .eq('id', habit.id)
+
+      if (error) throw error
+
+      onSave(editedHabit)
+      toast.success('Изменения сохранены')
+    } catch (error) {
+      logger.error('Ошибка при сохранении', error)
+      toast.error('Не удалось сохранить изменения')
     }
   }
 
@@ -324,205 +271,187 @@ export function EditHabitModal({ habit, onClose, onSave }: EditHabitModalProps) 
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9 }}
-        animate={{ scale: 1 }}
-        exit={{ scale: 0.9 }}
-        className="w-full max-w-2xl bg-zinc-900 rounded-2xl overflow-hidden"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="w-full max-w-lg p-6 bg-zinc-900 rounded-2xl shadow-xl space-y-6"
         onClick={e => e.stopPropagation()}
       >
         {/* Заголовок */}
-        <div className="p-6 bg-gradient-to-br from-purple-500/20 to-pink-500/20">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-white/10 text-purple-400">
-              <Icon icon="solar:meditation-bold" className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-medium text-purple-400">
-              {habit.name}
-            </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-medium text-white">Редактировать привычку</h3>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10">
+            <MdClose className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Название */}
+        <div className="space-y-2">
+          <label className="text-sm text-white/60">Название</label>
+          <input
+            type="text"
+            value={editedHabit.name}
+            onChange={e => setEditedHabit({ ...editedHabit, name: e.target.value })}
+            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg 
+              text-white focus:outline-none focus:border-white/20"
+          />
+        </div>
+
+        {/* Целевое значение */}
+        <div className="space-y-2">
+          <label className="text-sm text-white/60">
+            Целевое значение ({config.unit})
+          </label>
+          <input
+            type="number"
+            value={editedHabit.target_value}
+            onChange={e => setEditedHabit({ ...editedHabit, target_value: Number(e.target.value) })}
+            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg 
+              text-white focus:outline-none focus:border-white/20"
+          />
+        </div>
+
+        {/* Быстрые кнопки */}
+        <div className="space-y-2">
+          <label className="text-sm text-white/60">Быстрые действия</label>
+          <div className="flex flex-wrap gap-2">
+            {buttons.map((btn, index) => (
+              <button
+                key={index}
+                className={`
+                  px-4 py-2 rounded-xl bg-white/10 
+                  text-${config.text} hover:bg-white/20 
+                  transition-colors
+                `}
+              >
+                {btn.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Контент */}
-        <div className="p-6 space-y-6">
-          {/* Добавление/вычитание значений */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-medium">Быстрые действия</h4>
-            
-            <div className="flex flex-wrap gap-2">
+        {/* Статистика с графиком */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h4 className="text-lg font-medium">Статистика</h4>
+            <div className="flex gap-2">
               <button
-                onClick={() => handleAddValue(10)}
-                className="px-4 py-2 rounded-xl bg-white/10 text-purple-400 hover:bg-white/20"
+                onClick={() => setStatsView('week')}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  statsView === 'week' ? 'bg-white/20' : 'bg-white/5'
+                }`}
               >
-                +10 мин
+                Неделя
               </button>
               <button
-                onClick={() => handleAddValue(30)}
-                className="px-4 py-2 rounded-xl bg-white/10 text-purple-400 hover:bg-white/20"
+                onClick={() => setStatsView('month')}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  statsView === 'month' ? 'bg-white/20' : 'bg-white/5'
+                }`}
               >
-                +30 мин
-              </button>
-              <button
-                onClick={() => handleAddValue(-10)}
-                className="px-4 py-2 rounded-xl bg-white/10 text-rose-400 hover:bg-white/20"
-              >
-                -10 мин
+                Месяц
               </button>
             </div>
           </div>
 
-          {/* Целевое значение */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-medium">Целевое значение</h4>
-            <input
-              type="number"
-              value={editingHabit.target_value}
-              onChange={(e) => setEditingHabit({
-                ...editingHabit,
-                target_value: Number(e.target.value)
-              })}
-              className="w-full px-4 py-2 bg-zinc-800 rounded-lg"
-              placeholder={`Целевое значение в ${config.unit}`}
-            />
-          </div>
-
-          {/* Статистика с графиком */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h4 className="text-lg font-medium">Статистика</h4>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setStatsView('week')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${
-                    statsView === 'week' ? 'bg-white/20' : 'bg-white/5'
-                  }`}
-                >
-                  Неделя
-                </button>
-                <button
-                  onClick={() => setStatsView('month')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${
-                    statsView === 'month' ? 'bg-white/20' : 'bg-white/5'
-                  }`}
-                >
-                  Месяц
-                </button>
+          {/* Основные показатели */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="p-4 rounded-xl bg-white/5">
+              <div className="text-sm opacity-60 mb-1">
+                {statsView === 'week' ? 'За неделю' : 'За месяц'}
               </div>
-            </div>
-
-            {/* Основные показатели */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="p-4 rounded-xl bg-white/5">
-                <div className="text-sm opacity-60 mb-1">
-                  {statsView === 'week' ? 'За неделю' : 'За месяц'}
-                </div>
-                <div className="text-2xl font-medium">
-                  {statsView === 'week' 
-                    ? stats?.weeklyTotal || 0 
-                    : stats?.monthlyTotal || 0} {config.unit}
-                </div>
-              </div>
-              <div className="p-4 rounded-xl bg-white/5">
-                <div className="text-sm opacity-60 mb-1">В среднем в день</div>
-                <div className="text-2xl font-medium">
-                  {Math.round(statsView === 'week' 
-                    ? (stats?.weeklyAverage || 0)
-                    : (stats?.monthlyAverage || 0))} {config.unit}
-                </div>
-              </div>
-            </div>
-
-            {/* График */}
-            <div className="bg-white/5 rounded-xl p-4">
-              <div className="h-48 relative flex items-end gap-1">
-                {(statsView === 'week' ? dailyValues.slice(-7) : dailyValues).map((day, i) => (
-                  <div
-                    key={day.date}
-                    className="flex-1 flex flex-col justify-end h-full group"
-                  >
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ 
-                        height: `${Math.min(100, (day.value / habit.target_value) * 100)}%`
-                      }}
-                      className={`w-full bg-gradient-to-t ${config.gradient} rounded-t-lg min-h-[4px]`}
-                      transition={{ duration: 0.5 }}
-                    />
-                    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-2 py-1 
-                      bg-zinc-800 rounded text-xs opacity-0 group-hover:opacity-100 
-                      transition-opacity whitespace-nowrap z-10"
-                    >
-                      {format(new Date(day.date), 'd MMM', { locale: ru })}: {day.value} {config.unit}
-                    </div>
-                    <div className="text-xs text-white/40 text-center mt-2">
-                      {format(new Date(day.date), 'dd.MM')}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Целевая линия */}
-                <div className="absolute inset-x-0 border-t border-white/20 border-dashed"
-                  style={{ bottom: '100%' }}
-                >
-                  <div className="absolute right-0 top-0 transform translate-y-[-50%] px-2 py-0.5 
-                    bg-zinc-800 rounded text-xs whitespace-nowrap"
-                  >
-                    Цель: {habit.target_value} {config.unit}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Текущая серия */}
-            <div className="p-4 rounded-xl bg-white/5 mt-4">
-              <div className="text-sm opacity-60 mb-1">Текущая серия</div>
               <div className="text-2xl font-medium">
-                {stats?.streak || 0} {stats?.streak === 1 ? 'день' : 'дней'}
+                {statsView === 'week' 
+                  ? stats?.weeklyTotal || 0 
+                  : stats?.monthlyTotal || 0} {config.unit}
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-white/5">
+              <div className="text-sm opacity-60 mb-1">В среднем в день</div>
+              <div className="text-2xl font-medium">
+                {Math.round(statsView === 'week' 
+                  ? (stats?.weeklyAverage || 0)
+                  : (stats?.monthlyAverage || 0))} {config.unit}
               </div>
             </div>
           </div>
 
-          {/* Управление данными */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-medium">Управление данными</h4>
-            <div className="flex gap-4">
-              <button
-                onClick={handleResetToday}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+          {/* График */}
+          <div className="bg-white/5 rounded-xl p-4">
+            <div className="h-48 relative flex items-end gap-1">
+              {(statsView === 'week' ? dailyValues.slice(-7) : dailyValues).map((day, i) => (
+                <div
+                  key={day.date}
+                  className="flex-1 flex flex-col justify-end h-full group"
+                >
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ 
+                      height: `${Math.min(100, (day.value / habit.target_value) * 100)}%`
+                    }}
+                    className={`w-full bg-gradient-to-t ${config.gradient} rounded-t-lg min-h-[4px]`}
+                    transition={{ duration: 0.5 }}
+                  />
+                  <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-2 py-1 
+                    bg-zinc-800 rounded text-xs opacity-0 group-hover:opacity-100 
+                    transition-opacity whitespace-nowrap z-10"
+                  >
+                    {format(new Date(day.date), 'd MMM', { locale: ru })}: {day.value} {config.unit}
+                  </div>
+                  <div className="text-xs text-white/40 text-center mt-2">
+                    {format(new Date(day.date), 'dd.MM')}
+                  </div>
+                </div>
+              ))}
+
+              {/* Целевая линия */}
+              <div className="absolute inset-x-0 border-t border-white/20 border-dashed"
+                style={{ bottom: '100%' }}
               >
-                <MdRefresh className="w-5 h-5" />
-                <span>Сбросить сегодня</span>
-              </button>
-              <button
-                onClick={handleDeleteProgress}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors"
-              >
-                <MdDelete className="w-5 h-5" />
-                <span>Удалить прогресс</span>
-              </button>
+                <div className="absolute right-0 top-0 transform translate-y-[-50%] px-2 py-0.5 
+                  bg-zinc-800 rounded text-xs whitespace-nowrap"
+                >
+                  Цель: {habit.target_value} {config.unit}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Текущая серия */}
+          <div className="p-4 rounded-xl bg-white/5 mt-4">
+            <div className="text-sm opacity-60 mb-1">Текущая серия</div>
+            <div className="text-2xl font-medium">
+              {stats?.streak || 0} {stats?.streak === 1 ? 'день' : 'дней'}
             </div>
           </div>
         </div>
 
-        {/* Кнопки */}
-        <div className="p-6 bg-zinc-900/50 border-t border-white/10">
-          <div className="flex justify-end gap-4">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              Отмена
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isLoading}
-              className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
-            >
-              Сохранить
-            </button>
-          </div>
+        {/* Кнопки действий */}
+        <div className="flex gap-3 pt-4">
+          <button
+            onClick={handleDeleteProgress}
+            className="flex-1 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 
+              text-red-400 transition-colors"
+          >
+            Сбросить прогресс
+          </button>
+          <button
+            onClick={handleResetToday}
+            className="flex-1 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 
+              text-white transition-colors"
+          >
+            Сбросить сегодня
+          </button>
         </div>
+
+        {/* Кнопка сохранения */}
+        <button
+          onClick={handleSave}
+          className="w-full px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 
+            text-white font-medium transition-colors"
+        >
+          Сохранить
+        </button>
       </motion.div>
     </motion.div>
   )
