@@ -42,7 +42,7 @@ class HabitsRealtimeManager {
   }
 
   private initChannels() {
-    logger.info('🔄 Инициализация realtime каналов...')
+    logger.info('🔄 Инициализация realtime каналов для привычек и логов...')
     
     // Отдельный канал для habits
     this.habitsChannel = supabase.channel('habits-channel')
@@ -50,7 +50,11 @@ class HabitsRealtimeManager {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'habits' },
         (payload) => {
-          logger.debug('📥 Получено изменение в habits:', payload)
+          logger.debug('📥 Получено изменение в habits:', { 
+            eventType: payload.eventType,
+            new: payload.new,
+            old: payload.old 
+          })
           this.handlePayload({ ...payload, table: 'habits' })
         }
       )
@@ -64,8 +68,17 @@ class HabitsRealtimeManager {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'habit_logs' },
-        (payload) => {
-          logger.debug('📝 Получено изменение в habit_logs:', payload)
+        (payload: RealtimePostgresChangesPayload<HabitLog>) => {
+          const habitId = payload.new && 'habit_id' in payload.new ? payload.new.habit_id :
+                         payload.old && 'habit_id' in payload.old ? payload.old.habit_id : null;
+          const value = payload.new && 'value' in payload.new ? payload.new.value :
+                       payload.old && 'value' in payload.old ? payload.old.value : null;
+                       
+          logger.debug('📝 Получено изменение в habit_logs:', { 
+            eventType: payload.eventType,
+            habitId,
+            value
+          })
           this.handlePayload({ ...payload, table: 'habit_logs' })
         }
       )
@@ -97,6 +110,12 @@ class HabitsRealtimeManager {
   }
 
   private handlePayload(payload: RealtimePostgresChangesPayload<any> & { table: string }) {
+    logger.debug('🔄 Обработка payload:', {
+      table: payload.table,
+      eventType: payload.eventType,
+      data: payload.new || payload.old
+    })
+
     this.callbacks.forEach((callbacks, key) => {
       callbacks.forEach(callback => {
         try {
