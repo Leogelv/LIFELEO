@@ -43,16 +43,11 @@ class HabitsRealtimeManager {
   private initChannel() {
     logger.info('🔄 Инициализация realtime каналов для привычек и логов...')
     
-    // Создаем отдельные каналы для habits и habit_logs
     this.channel = supabase.channel('habits-all-channel')
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'habits'
-        },
-        (payload: RealtimePostgresChangesPayload<Habit>) => {
+        { event: '*', schema: 'public', table: 'habits' },
+        (payload) => {
           logger.debug('📥 Получено изменение в habits:', {
             event: payload.eventType,
             new: payload.new,
@@ -63,20 +58,12 @@ class HabitsRealtimeManager {
       )
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'habit_logs'
-        },
-        (payload: RealtimePostgresChangesPayload<HabitLog>) => {
-          const newLog = payload.new as HabitLog | null
-          const oldLog = payload.old as HabitLog | null
-          
+        { event: '*', schema: 'public', table: 'habit_logs' },
+        (payload) => {
           logger.debug('📝 Получено изменение в habit_logs:', {
             event: payload.eventType,
-            habitId: newLog?.habit_id || oldLog?.habit_id,
-            value: newLog?.value,
-            completedAt: newLog?.completed_at
+            new: payload.new,
+            old: payload.old
           })
           this.handlePayload({ ...payload, table: 'habit_logs' })
         }
