@@ -10,6 +10,7 @@ import { HabitCard } from './HabitCard'
 import { EditHabitModal } from './EditHabitModal'
 import { type HabitCategory } from './config/categoryConfig'
 import { habitsRealtime } from '@/utils/habits-realtime'
+import { LogsWorker } from './LogsWorker'
 
 interface Habit {
   id: string
@@ -73,20 +74,22 @@ export default function HabitsList() {
 
         logger.info('🔄 Realtime: Получено изменение в привычках', { 
           eventType: payload.eventType,
-          habit: payload.new?.name || payload.old?.name,
-          id: payload.new?.id || payload.old?.id
+          habit: payload.new && 'name' in payload.new ? payload.new.name : 
+                 payload.old && 'name' in payload.old ? payload.old.name : 'unknown',
+          id: payload.new && 'id' in payload.new ? payload.new.id : 
+              payload.old && 'id' in payload.old ? payload.old.id : 'unknown'
         })
         
         try {
-          if (payload.eventType === 'INSERT') {
+          if (payload.eventType === 'INSERT' && payload.new && 'name' in payload.new) {
             logger.debug('📥 Добавляем новую привычку', payload.new)
             setHabits(current => [...current, payload.new as Habit])
           } 
-          else if (payload.eventType === 'DELETE') {
+          else if (payload.eventType === 'DELETE' && payload.old && 'id' in payload.old) {
             logger.debug('🗑️ Удаляем привычку', payload.old)
             setHabits(current => current.filter(h => h.id !== payload.old.id))
           } 
-          else if (payload.eventType === 'UPDATE') {
+          else if (payload.eventType === 'UPDATE' && payload.new && 'id' in payload.new) {
             logger.debug('✏️ Обновляем привычку', payload.new)
             setHabits(current => 
               current.map(h => h.id === payload.new.id ? payload.new as Habit : h)
@@ -128,6 +131,7 @@ export default function HabitsList() {
 
   return (
     <div className="space-y-4">
+      <LogsWorker />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {habits.map(habit => (
           <HabitCard
