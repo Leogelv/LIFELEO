@@ -34,31 +34,23 @@ interface Todo {
 
 interface UniversalCalendarGridProps {
   currentDate: Date
-  sessions: Session[]
-  todos?: Todo[]
+  todos: Todo[]
   mode: CalendarMode
-  view?: CalendarView
-  onViewChange?: (view: CalendarView) => void
-  onAddNow?: () => void
-  onAddWithDate?: () => void
+  view: CalendarView
+  onViewChange: (view: CalendarView) => void
   onTaskMove?: (taskId: string, newDate: Date) => void
-  onMonthChange?: (date: Date) => void
 }
 
 export function UniversalCalendarGrid({ 
   currentDate, 
-  sessions, 
-  todos = [],
-  mode,
-  view = 'month',
+  todos, 
+  mode, 
+  view, 
   onViewChange,
-  onAddNow,
-  onAddWithDate,
-  onTaskMove,
-  onMonthChange
+  onTaskMove 
 }: UniversalCalendarGridProps) {
-  const monthStart = startOfMonth(currentDate)
-  const monthEnd = endOfMonth(currentDate)
+  const monthStart = startOfMonth(new Date())
+  const monthEnd = endOfMonth(new Date())
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
 
   // Получаем дни в зависимости от выбранного вида
@@ -66,13 +58,13 @@ export function UniversalCalendarGrid({
     switch (view) {
       case '3days':
         return eachDayOfInterval({
-          start: currentDate,
-          end: addDays(currentDate, 2)
+          start: new Date(),
+          end: addDays(new Date(), 2)
         })
       case 'week':
         return eachDayOfInterval({
-          start: startOfWeek(currentDate, { locale: ru }),
-          end: endOfWeek(currentDate, { locale: ru })
+          start: startOfWeek(new Date(), { locale: ru }),
+          end: endOfWeek(new Date(), { locale: ru })
         })
       default:
         return days
@@ -244,45 +236,7 @@ export function UniversalCalendarGrid({
     if (mode === 'tasks') {
       return renderTasksForDay(day)
     }
-
-    // Преобразуем day в строку в формате YYYY-MM-DD для сравнения
-    const dayStr = day.toISOString().split('T')[0]
-    
-    // Debug: показываем все сессии при первом рендере
-    if (mode === 'water' && day.getDate() === 1) {
-      console.log('Все сессии:', sessions)
-    }
-    
-    const daySessions = sessions.filter(s => {
-      const matches = s.date === dayStr
-      // Debug: показываем сравнение дат для каждой сессии
-      if (mode === 'water') {
-        console.log(`Сравнение дат для ${dayStr}:`, {
-          dayStr,
-          sessionDate: s.date,
-          matches
-        })
-      }
-      return matches
-    })
-    
-    // Debug: показываем результат фильтрации
-    if (mode === 'water' && daySessions.length > 0) {
-      console.log(`Найдены сессии для ${dayStr}:`, daySessions)
-    }
-    
-    if (!daySessions.length) return null
-
-    switch (mode) {
-      case 'sport':
-        return renderSportSession(daySessions)
-      case 'water':
-        return renderWaterProgress(daySessions)
-      case 'sleep':
-        return renderSleepSession(daySessions)
-      default:
-        return null
-    }
+    return null
   }
 
   // Функция для определения коллизии между карточкой и ячейкой
@@ -377,7 +331,6 @@ export function UniversalCalendarGrid({
           <div className="flex items-center justify-between mb-8">
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => onMonthChange?.(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
               className="p-2 rounded-lg hover:bg-[#E8D9C5]/5 transition-colors"
             >
               <Icon icon="solar:arrow-left-outline" className="w-6 h-6 text-[#E8D9C5]/60" />
@@ -389,7 +342,6 @@ export function UniversalCalendarGrid({
             
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => onMonthChange?.(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
               className="p-2 rounded-lg hover:bg-[#E8D9C5]/5 transition-colors"
             >
               <Icon icon="solar:arrow-right-outline" className="w-6 h-6 text-[#E8D9C5]/60" />

@@ -31,13 +31,17 @@ export interface ContactAnalysis {
 }
 
 export interface Contact {
-  id: number
+  id?: number
   user_id: number
   first_name: string
   last_name: string
   username: string
   last_message?: string
   is_pinned?: boolean
+  is_group?: boolean
+  members_count?: number
+  unread_count?: number
+  last_message_date?: string
   history?: {
     raw: {
       messages: Array<{

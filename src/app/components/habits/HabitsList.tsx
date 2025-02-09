@@ -1,125 +1,149 @@
 'use client'
 
-import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { RiMentalHealthLine, RiWaterFlashLine } from 'react-icons/ri'
-import { GiMuscleUp } from 'react-icons/gi'
-import { BsMoonStars } from 'react-icons/bs'
+import { useState, useEffect, useContext } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { supabase } from '@/utils/supabase/client'
+import { toast } from 'sonner'
+import { logger } from '@/utils/logger'
+import { UserIdContext } from '@/contexts/UserIdContext'
+import { HabitCard } from './HabitCard'
+import { EditHabitModal } from './EditHabitModal'
+import { type HabitCategory } from './config/categoryConfig'
 
-interface HabitsListProps {
-  totalMeditationMinutes: number
+interface Habit {
+  id: string
+  name: string
+  category: HabitCategory
+  target_value: number
+  telegram_id: number
+  created_at: string
+  active: boolean
 }
 
-const habits = [
-  {
-    id: 'meditation',
-    name: 'Медитация',
-    icon: RiMentalHealthLine,
-    color: 'from-[#E8D9C5] to-[#C2A790]',
-    href: '/habits/meditation'
-  },
-  {
-    id: 'sport',
-    name: 'Спорт',
-    icon: GiMuscleUp,
-    color: 'from-[#D9E8D9] to-[#90C290]',
-    href: '/habits/sport'
-  },
-  {
-    id: 'water',
-    name: 'Вода',
-    icon: RiWaterFlashLine,
-    color: 'from-[#D9E8E8] to-[#90C2C2]',
-    href: '/habits/water'
-  },
-  {
-    id: 'sleep',
-    name: 'Сон',
-    icon: BsMoonStars,
-    color: 'from-[#E8D9E8] to-[#C290C2]',
-    href: '/habits/sleep'
+interface HabitLog {
+  id: string
+  habit_id: string
+  value: number
+  completed_at: string
+  created_at: string
+}
+
+export default function HabitsList() {
+  const [habits, setHabits] = useState<Habit[]>([])
+  const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null)
+  const userId = useContext(UserIdContext)
+
+  // Загрузка привычек
+  useEffect(() => {
+    const fetchHabits = async () => {
+      try {
+        logger.debug('Начинаем загрузку привычек', { userId })
+        const { data, error } = await supabase
+          .from('habits')
+          .select('*')
+          .eq('telegram_id', userId)
+          .eq('active', true)
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          logger.error('Ошибка при загрузке привычек', { error })
+          toast.error('Не удалось загрузить привычки')
+          return
+        }
+
+        logger.info('Привычки успешно загружены', { count: data?.length })
+        setHabits(data || [])
+      } catch (error) {
+        logger.error('Неожиданная ошибка при загрузке привычек', { error })
+        toast.error('Что-то пошло не так')
+      }
+    }
+
+    // Подписка на изменения
+    const channel = supabase.channel('habits-channel')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'habits',
+          filter: `telegram_id=eq.${userId}`
+        },
+        (payload) => {
+          logger.debug('Получено изменение в привычках', { 
+            eventType: payload.eventType,
+            newData: payload.new,
+            oldData: payload.old
+          })
+
+          if (payload.eventType === 'INSERT') {
+            setHabits(current => [...current, payload.new as Habit])
+          } 
+          else if (payload.eventType === 'DELETE') {
+            setHabits(current => current.filter(habit => habit.id !== payload.old.id))
+          } 
+          else if (payload.eventType === 'UPDATE') {
+            setHabits(current => 
+              current.map(habit => 
+                habit.id === payload.new.id ? payload.new as Habit : habit
+              )
+            )
+          }
+        }
+      )
+      .subscribe()
+
+    if (userId) {
+      fetchHabits()
+    }
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [userId])
+
+  const handleEdit = (habit: Habit) => {
+    setSelectedHabit(habit)
   }
-]
 
-export function HabitsList({ totalMeditationMinutes }: HabitsListProps) {
+  const handleSave = (updatedHabit: Habit) => {
+    setHabits(current =>
+      current.map(habit =>
+        habit.id === updatedHabit.id ? updatedHabit : habit
+      )
+    )
+    setSelectedHabit(null)
+  }
+
+  if (habits.length === 0) {
+    return (
+      <div className="text-center py-12 text-white/60">
+        Нет активных привычек
+      </div>
+    )
+  }
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {habits.map((habit) => {
-        const Icon = habit.icon
-        const showProgress = habit.id === 'meditation'
-        const progress = showProgress ? Math.min((totalMeditationMinutes / 120) * 100, 100) : 0
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {habits.map(habit => (
+          <HabitCard
+            key={habit.id}
+            habit={habit}
+            onEdit={handleEdit}
+          />
+        ))}
+      </div>
 
-        return (
-          <Link key={habit.id} href={habit.href}>
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="relative p-6 rounded-xl bg-[#2A2A2A]/80 backdrop-blur-xl border border-[#333333]
-                hover:bg-[#2A2A2A] transition-all duration-300 overflow-hidden group"
-            >
-              {/* Фоновый градиент */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${habit.color} opacity-0 
-                group-hover:opacity-5 transition-opacity duration-300`} />
-              
-              {/* Блоб эффект */}
-              <motion.div
-                className="absolute -inset-2 opacity-0 group-hover:opacity-10"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  rotate: [0, 90, 0],
-                }}
-                transition={{
-                  duration: 8,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-                style={{
-                  background: `radial-gradient(circle at 50% 50%, ${habit.color.split(' ')[1].replace('to-', '')}, transparent 70%)`
-                }}
-              />
-
-              {/* Контент */}
-              <div className="relative z-10 flex flex-col items-center gap-3">
-                <Icon className="w-8 h-8 text-[#E8D9C5]" />
-                <span className="text-sm font-light tracking-wide text-[#E8D9C5]">{habit.name}</span>
-
-                {/* Прогресс медитации */}
-                {showProgress && (
-                  <div className="w-full mt-2">
-                    <div className="relative h-1 bg-[#333333] rounded-full overflow-hidden">
-                      <motion.div
-                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#E8D9C5] to-[#C2A790]"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress}%` }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                      />
-                    </div>
-                    <div className="mt-1 text-[10px] text-[#E8D9C5]/60 text-center">
-                      {totalMeditationMinutes} / 120 мин
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Блики */}
-              <motion.div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100"
-                initial={false}
-                style={{
-                  background: 'radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.06) 0%, transparent 60%)'
-                }}
-                onMouseMove={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect()
-                  const x = ((e.clientX - rect.left) / rect.width) * 100
-                  const y = ((e.clientY - rect.top) / rect.height) * 100
-                  e.currentTarget.style.setProperty('--mouse-x', `${x}%`)
-                  e.currentTarget.style.setProperty('--mouse-y', `${y}%`)
-                }}
-              />
-            </motion.div>
-          </Link>
-        )
-      })}
+      <AnimatePresence>
+        {selectedHabit && (
+          <EditHabitModal
+            habit={selectedHabit}
+            onClose={() => setSelectedHabit(null)}
+            onSave={handleSave}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 } 

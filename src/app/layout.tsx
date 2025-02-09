@@ -3,13 +3,18 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'sonner'
 import { NavigationLoader } from './components/ui/NavigationLoader'
+import LogViewer from './components/LogViewer'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Vi Passana',
-  description: 'Медитация и осознанность',
+  title: 'LIFELEO',
+  description: 'Life management app',
 }
+
+// Expose environment variables to the client
+export const runtime = 'edge'
+export const preferredRegion = 'auto'
 
 export default function RootLayout({
   children,
@@ -18,6 +23,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify({
+              NEXT_PUBLIC_YANDEX_API_KEY: process.env.NEXT_PUBLIC_YANDEX_API_KEY,
+            })}`,
+          }}
+        />
+      </head>
       <body className={inter.className}>
         <NavigationLoader />
         {children}
@@ -31,6 +45,7 @@ export default function RootLayout({
             }
           }}
         />
+        <LogViewer />
       </body>
     </html>
   )

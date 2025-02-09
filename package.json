@@ -10,11 +10,20 @@
     "db": "ts-node src/cli/supabase-manager.ts"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@iconify/react": "^5.2.0",
     "@supabase/auth-helpers-nextjs": "^0.8.7",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.39.1",
+    "@tiptap/extension-image": "^2.11.5",
+    "@tiptap/extension-link": "^2.11.5",
+    "@tiptap/extension-placeholder": "^2.11.5",
+    "@tiptap/extension-task-item": "^2.11.5",
+    "@tiptap/extension-task-list": "^2.11.5",
+    "@tiptap/pm": "^2.11.5",
+    "@tiptap/react": "^2.11.5",
+    "@tiptap/starter-kit": "^2.11.5",
     "@types/lodash": "^4.17.14",
     "@types/node-fetch": "^2.6.12",
     "commander": "^11.1.0",
@@ -30,7 +39,9 @@
     "react-dom": "^18",
     "react-hot-toast": "^2.5.1",
     "react-icons": "^5.4.0",
-    "sonner": "^1.7.1"
+    "sonner": "^1.7.1",
+    "telegraf": "^4.15.3",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -41,7 +52,6 @@
     "eslint-config-next": "14.0.4",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
-    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

@@ -1,164 +1,110 @@
 'use client'
 
-import { UserIdProvider } from './contexts/UserContext'
-import { HabitCard } from './components/habits/HabitCard'
-import { Icon } from '@iconify/react'
+import { useEffect } from 'react'
+import { logger } from '@/utils/logger'
 import Link from 'next/link'
-import TelegramScript from './components/TelegramScript'
+import { motion } from 'framer-motion'
 import { useTelegram } from './hooks/useTelegram'
-import { BottomMenu } from './components/BottomMenu'
-import { useWaterSessions } from './hooks/useWaterSessions'
-import { useSportSessions } from './hooks/useSportSessions'
-import { useState, useEffect } from 'react'
+import { Icon } from '@iconify/react'
 
 export default function Home() {
-  const { isExpanded, userId, userData, isTelegram } = useTelegram()
-  const { sessions: waterSessions } = useWaterSessions()
-  const { sessions: sportSessions } = useSportSessions()
+  const { isExpanded } = useTelegram()
 
-  // Считаем общее количество воды за сегодня
-  const today = new Date().toISOString().split('T')[0]
-  const todayWater = waterSessions
-    ?.filter(session => session.date.startsWith(today))
-    ?.reduce((acc, session) => acc + session.amount, 0) || 0
+  useEffect(() => {
+    logger.info('Главная страница загружена')
+  }, [])
 
-  // Считаем тренировки за сегодня (без useEffect)
-  const todaySport = sportSessions
-    ?.filter(session => session.date === today)
-    ?.reduce((acc, session) => acc + session.duration, 0) || 0
-
-  console.log('💪 Sport total:', todaySport)
+  const handleTasksClick = () => {
+    logger.debug('Переход на страницу задач')
+  }
 
   return (
-    <UserIdProvider value={userId || 375634162}>
-      <TelegramScript />
-      <main className={`min-h-screen relative overflow-hidden px-3 sm:px-6 pb-12 sm:pb-20 ${isExpanded ? 'pt-[100px]' : 'pt-6'}`}>
-        {/* Оптимизированные CSS блобы */}
-        <div className="fixed inset-0 overflow-hidden">
-          <div className="blob blob-1" />
-          <div className="blob blob-2" />
-          <div className="blob blob-3" />
-          <style jsx>{`
-            .blob {
-              position: absolute;
-              width: 100%;
-              height: 100%;
-              border-radius: 50%;
-              mix-blend-mode: screen;
-              filter: blur(80px);
-              animation: float 20s infinite ease-in-out;
-              opacity: 0.7;
-            }
-            
-            .blob-1 {
-              background: linear-gradient(90deg, rgba(255,107,0,0.2) 0%, rgba(255,0,81,0.2) 100%);
-              top: -50%;
-              left: -50%;
-              animation-delay: 0s;
-            }
-            
-            .blob-2 {
-              background: linear-gradient(90deg, rgba(128,0,255,0.2) 0%, rgba(0,102,255,0.2) 100%);
-              bottom: -50%;
-              right: -50%;
-              animation-delay: -7s;
-            }
-            
-            .blob-3 {
-              background: linear-gradient(90deg, rgba(0,255,255,0.2) 0%, rgba(0,102,255,0.2) 100%);
-              top: -50%;
-              right: -50%;
-              animation-delay: -14s;
-            }
-            
-            @keyframes float {
-              0%, 100% {
-                transform: translate(0, 0) scale(1);
-              }
-              25% {
-                transform: translate(10%, 10%) scale(1.1);
-              }
-              50% {
-                transform: translate(-5%, 5%) scale(0.9);
-              }
-              75% {
-                transform: translate(5%, -10%) scale(1.05);
-              }
-            }
-          `}</style>
-        </div>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className={`min-h-screen relative overflow-hidden ${isExpanded ? 'pt-[100px]' : ''}`}
+    >
+      {/* Animated gradient background */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="fixed inset-0 bg-gradient-to-br from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] animate-gradient-slow" 
+      />
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="fixed inset-0 bg-gradient-to-tr from-rose-500/5 via-transparent to-pink-500/5 animate-gradient-slow-reverse" 
+      />
 
-        <div className="relative z-10 max-w-7xl mx-auto">
-          {/* Хедер */}
-          <div className="flex justify-between items-center mb-4 sm:mb-12">
-            <h1 className="text-2xl sm:text-4xl font-light text-[#E8D9C5]">Панель Смыслов</h1>
-            <Link 
-              href="/contacts" 
-              className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-[#E8D9C5]/10 bg-[#E8D9C5]/5 backdrop-blur-sm hover:border-[#E8D9C5]/20 transition-all duration-500"
-            >
-              {userData?.photo_url ? (
-                <img 
-                  src={userData.photo_url} 
-                  alt="Avatar" 
-                  className="w-5 h-5 rounded-full"
-                />
-              ) : (
-                <Icon icon="solar:users-group-rounded-outline" className="w-5 h-5 text-[#E8D9C5]" />
-              )}
-              <span className="text-[#E8D9C5]">
-                {userData?.username ? `TG: @${userData.username}` : 'Контакты'}
-              </span>
+      {/* Content */}
+      <div className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <motion.h1 
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent"
+          >
+            LIFELEO
+          </motion.h1>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-[95%] mx-auto">
+            {/* Задачи */}
+            <Link href="/tasks" onClick={handleTasksClick}>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="p-6 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10
+                  hover:bg-white/10 transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-medium">Задачи</h2>
+                  <Icon icon="solar:checklist-minimalistic-bold" className="w-6 h-6 text-rose-400" />
+                </div>
+                <p className="text-white/60">
+                  Управляйте задачами и заметками
+                </p>
+              </motion.div>
+            </Link>
+
+            {/* Привычки */}
+            <Link href="/habits">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="p-6 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10
+                  hover:bg-white/10 transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-medium">Привычки</h2>
+                  <Icon icon="solar:cycling-bold" className="w-6 h-6 text-pink-400" />
+                </div>
+                <p className="text-white/60">
+                  Отслеживайте привычки и прогресс
+                </p>
+              </motion.div>
+            </Link>
+
+            {/* Контакты */}
+            <Link href="/contacts">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="p-6 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10
+                  hover:bg-white/10 transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-medium">Контакты</h2>
+                  <Icon icon="solar:users-group-rounded-bold" className="w-6 h-6 text-pink-400" />
+                </div>
+                <p className="text-white/60">
+                  Управляйте контактами и анализируйте общение
+                </p>
+              </motion.div>
             </Link>
           </div>
-
-          {/* Сетка привычек */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-            <HabitCard 
-              icon="solar:glass-water-bold"
-              title="Вода"
-              href="/habits/water"
-              gradient="from-blue-500/40 to-cyan-400/30"
-              amount={todayWater}
-              unit="мл"
-              className="min-h-[100px] sm:min-h-[180px]"
-            />
-            <HabitCard 
-              icon="solar:dumbbell-small-bold"
-              title="Спорт"
-              href="/habits/sport"
-              gradient="from-orange-500/40 to-red-400/30"
-              amount={todaySport}
-              unit="мин"
-              className="min-h-[100px] sm:min-h-[180px]"
-            />
-            <HabitCard 
-              icon="solar:checklist-minimalistic-bold"
-              title="Задачи"
-              href="/habits/tasks"
-              gradient="from-green-500/40 to-emerald-400/30"
-              className="min-h-[100px] sm:min-h-[180px]"
-            />
-            <HabitCard 
-              icon="solar:meditation-bold"
-              title="Медитация"
-              href="/habits/meditation"
-              gradient="from-purple-500/40 to-blue-400/30"
-              className="min-h-[100px] sm:min-h-[180px]"
-            />
-          </div>
-
-          {/* Кнопка "На домашний экран" только для Telegram */}
-          {isTelegram && (
-            <button
-              onClick={() => window.Telegram?.WebApp.addToHomeScreen?.()}
-              className="mx-auto mt-12 block px-4 py-2 text-sm text-[#E8D9C5]/70 border border-[#E8D9C5]/10 rounded-xl hover:border-[#E8D9C5]/20 transition-all duration-500"
-            >
-              На домашний экран
-            </button>
-          )}
         </div>
-      </main>
-      <BottomMenu />
-    </UserIdProvider>
+      </div>
+    </motion.div>
   )
 }
