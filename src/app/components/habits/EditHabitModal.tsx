@@ -331,22 +331,14 @@ export function EditHabitModal({ habit, onClose, onSave }: EditHabitModalProps) 
         onClick={e => e.stopPropagation()}
       >
         {/* Заголовок */}
-        <div className={`p-6 bg-gradient-to-br ${config.gradient}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${config.text} bg-white/10`}>
-                <Icon icon={config.icon} className="w-6 h-6" />
-              </div>
-              <h3 className={`text-xl font-medium ${config.text}`}>
-                {config.name}
-              </h3>
+        <div className="p-6 bg-gradient-to-br from-purple-500/20 to-pink-500/20">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-white/10 text-purple-400">
+              <Icon icon="solar:meditation-bold" className="w-6 h-6" />
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              <MdClose className="w-6 h-6" />
-            </button>
+            <h3 className="text-xl font-medium text-purple-400">
+              {habit.name}
+            </h3>
           </div>
         </div>
 
@@ -356,32 +348,25 @@ export function EditHabitModal({ habit, onClose, onSave }: EditHabitModalProps) 
           <div className="space-y-4">
             <h4 className="text-lg font-medium">Быстрые действия</h4>
             
-            <div className="flex justify-between">
-              {/* Кнопки добавления */}
-              <div className="flex gap-2">
-                {[30, 45, 60].map(value => (
-                  <button
-                    key={`add-${value}`}
-                    onClick={() => handleAddValue(value)}
-                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg"
-                  >
-                    +{value} {config.unit}
-                  </button>
-                ))}
-              </div>
-              
-              {/* Кнопки вычитания */}
-              <div className="flex gap-2">
-                {[30, 60].map(value => (
-                  <button
-                    key={`sub-${value}`}
-                    onClick={() => handleAddValue(-value)}
-                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg"
-                  >
-                    -{value} {config.unit}
-                  </button>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleAddValue(10)}
+                className="px-4 py-2 rounded-xl bg-white/10 text-purple-400 hover:bg-white/20"
+              >
+                +10 мин
+              </button>
+              <button
+                onClick={() => handleAddValue(30)}
+                className="px-4 py-2 rounded-xl bg-white/10 text-purple-400 hover:bg-white/20"
+              >
+                +30 мин
+              </button>
+              <button
+                onClick={() => handleAddValue(-10)}
+                className="px-4 py-2 rounded-xl bg-white/10 text-rose-400 hover:bg-white/20"
+              >
+                -10 мин
+              </button>
             </div>
           </div>
 

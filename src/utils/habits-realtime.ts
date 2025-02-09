@@ -24,13 +24,14 @@ type RealtimeCallback = (payload: RealtimePostgresChangesPayload<any> & { table:
 
 class HabitsRealtimeManager {
   private static instance: HabitsRealtimeManager
-  private channel: any
+  private habitsChannel: any
+  private logsChannel: any
   private callbacks: Map<string, RealtimeCallback[]> = new Map()
   private isConnected: boolean = false
   private reconnectTimer: NodeJS.Timeout | null = null
 
   private constructor() {
-    this.initChannel()
+    this.initChannels()
   }
 
   public static getInstance(): HabitsRealtimeManager {
@@ -40,57 +41,59 @@ class HabitsRealtimeManager {
     return HabitsRealtimeManager.instance
   }
 
-  private initChannel() {
-    logger.info('🔄 Инициализация realtime каналов для привычек и логов...')
+  private initChannels() {
+    logger.info('🔄 Инициализация realtime каналов...')
     
-    this.channel = supabase.channel('test-logs-channel')
+    // Отдельный канал для habits
+    this.habitsChannel = supabase.channel('habits-channel')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'habits' },
         (payload) => {
-          logger.debug('📥 Получено изменение в habits:', {
-            event: payload.eventType,
-            new: payload.new,
-            old: payload.old
-          })
+          logger.debug('📥 Получено изменение в habits:', payload)
           this.handlePayload({ ...payload, table: 'habits' })
         }
       )
+      .subscribe((status) => {
+        logger.info('🔌 Статус habits канала:', status)
+        this.handleStatus(status)
+      })
+
+    // Отдельный канал для habit_logs
+    this.logsChannel = supabase.channel('habit-logs-channel')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'habit_logs' },
         (payload) => {
-          logger.debug('📝 Получено изменение в habit_logs:', {
-            event: payload.eventType,
-            new: payload.new,
-            old: payload.old
-          })
+          logger.debug('📝 Получено изменение в habit_logs:', payload)
           this.handlePayload({ ...payload, table: 'habit_logs' })
         }
       )
       .subscribe((status) => {
-        logger.info('🔌 Статус подключения к realtime:', status)
-        
-        if (status === 'SUBSCRIBED') {
-          this.isConnected = true
-          logger.info('✅ Успешно подписались на изменения в habits и habit_logs')
-          if (this.reconnectTimer) {
-            clearTimeout(this.reconnectTimer)
-            this.reconnectTimer = null
-          }
-        }
-        
-        if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          this.isConnected = false
-          logger.warn('🔄 Соединение закрыто, пробуем переподключиться через 5 секунд...')
-          
-          if (!this.reconnectTimer) {
-            this.reconnectTimer = setTimeout(() => {
-              this.reconnect()
-            }, 5000)
-          }
-        }
+        logger.info('🔌 Статус logs канала:', status)
+        this.handleStatus(status)
       })
+  }
+
+  private handleStatus(status: string) {
+    if (status === 'SUBSCRIBED') {
+      this.isConnected = true
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer)
+        this.reconnectTimer = null
+      }
+    }
+    
+    if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+      this.isConnected = false
+      logger.warn('🔄 Соединение закрыто, пробуем переподключиться через 5 секунд...')
+      
+      if (!this.reconnectTimer) {
+        this.reconnectTimer = setTimeout(() => {
+          this.reconnect()
+        }, 5000)
+      }
+    }
   }
 
   private handlePayload(payload: RealtimePostgresChangesPayload<any> & { table: string }) {
@@ -107,10 +110,13 @@ class HabitsRealtimeManager {
 
   private reconnect() {
     logger.info('🔄 Переподключение к realtime...')
-    if (this.channel) {
-      this.channel.unsubscribe()
+    if (this.habitsChannel) {
+      this.habitsChannel.unsubscribe()
     }
-    this.initChannel()
+    if (this.logsChannel) {
+      this.logsChannel.unsubscribe()
+    }
+    this.initChannels()
   }
 
   public subscribe(key: string, callback: RealtimeCallback) {
@@ -142,9 +148,11 @@ class HabitsRealtimeManager {
   }
 
   public cleanup() {
-    if (this.channel) {
-      logger.debug('🔌 Отключаемся от realtime каналов')
-      this.channel.unsubscribe()
+    if (this.habitsChannel) {
+      this.habitsChannel.unsubscribe()
+    }
+    if (this.logsChannel) {
+      this.logsChannel.unsubscribe()
     }
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)

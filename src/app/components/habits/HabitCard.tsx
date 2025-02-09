@@ -282,26 +282,66 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
           <div className="flex flex-wrap gap-2 pt-2" onClick={e => e.stopPropagation()}>
             {habit.category === 'water' && (
               <>
-                <QuickAddButton value={300} unit={config.unit} onClick={() => handleQuickAdd(300)} isLoading={isLoading} config={config} />
-                <QuickAddButton value={500} unit={config.unit} onClick={() => handleQuickAdd(500)} isLoading={isLoading} config={config} />
+                <button
+                  onClick={() => handleQuickAdd(300)}
+                  className="px-4 py-2 rounded-xl bg-white/10 text-blue-400 hover:bg-white/20"
+                >
+                  +300 мл
+                </button>
+                <button
+                  onClick={() => handleQuickAdd(500)}
+                  className="px-4 py-2 rounded-xl bg-white/10 text-blue-400 hover:bg-white/20"
+                >
+                  +500 мл
+                </button>
               </>
             )}
             {habit.category === 'meditation' && (
               <>
-                <QuickAddButton value={10} unit={config.unit} onClick={() => handleQuickAdd(10)} isLoading={isLoading} config={config} />
-                <QuickAddButton value={30} unit={config.unit} onClick={() => handleQuickAdd(30)} isLoading={isLoading} config={config} />
+                <button
+                  onClick={() => handleQuickAdd(10)}
+                  className="px-4 py-2 rounded-xl bg-white/10 text-purple-400 hover:bg-white/20"
+                >
+                  +10 мин
+                </button>
+                <button
+                  onClick={() => handleQuickAdd(30)}
+                  className="px-4 py-2 rounded-xl bg-white/10 text-purple-400 hover:bg-white/20"
+                >
+                  +30 мин
+                </button>
               </>
             )}
             {habit.category === 'sport' && (
               <>
-                <QuickAddButton value={30} unit={config.unit} onClick={() => handleQuickAdd(30)} isLoading={isLoading} config={config} />
-                <QuickAddButton value={60} unit={config.unit} onClick={() => handleQuickAdd(60)} isLoading={isLoading} config={config} />
+                <button
+                  onClick={() => handleQuickAdd(30)}
+                  className="px-4 py-2 rounded-xl bg-white/10 text-green-400 hover:bg-white/20"
+                >
+                  +30 мин
+                </button>
+                <button
+                  onClick={() => handleQuickAdd(60)}
+                  className="px-4 py-2 rounded-xl bg-white/10 text-green-400 hover:bg-white/20"
+                >
+                  +60 мин
+                </button>
               </>
             )}
             {habit.category === 'breathing' && (
               <>
-                <QuickAddButton value={5} unit={config.unit} onClick={() => handleQuickAdd(5)} isLoading={isLoading} config={config} />
-                <QuickAddButton value={10} unit={config.unit} onClick={() => handleQuickAdd(10)} isLoading={isLoading} config={config} />
+                <button
+                  onClick={() => handleQuickAdd(5)}
+                  className="px-4 py-2 rounded-xl bg-white/10 text-cyan-400 hover:bg-white/20"
+                >
+                  +5 мин
+                </button>
+                <button
+                  onClick={() => handleQuickAdd(10)}
+                  className="px-4 py-2 rounded-xl bg-white/10 text-cyan-400 hover:bg-white/20"
+                >
+                  +10 мин
+                </button>
               </>
             )}
           </div>
