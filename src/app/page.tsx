@@ -1,11 +1,31 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { logger } from '@/utils/logger'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTelegram } from './hooks/useTelegram'
 import { Icon } from '@iconify/react'
+import { supabase } from '@/utils/supabase/client'
+import { realtime } from '@/utils/realtime'
+import { habitsRealtime } from '@/utils/habits-realtime'
+
+interface TaskStats {
+  overdue: number
+  completed: number
+  total: number
+}
+
+interface HabitStats {
+  completedToday: number
+  totalHabits: number
+  streak: number
+}
+
+interface ContactStats {
+  totalContacts: number
+  activeChats: number
+}
 
 const menuItems = [
   {
@@ -44,11 +64,115 @@ const menuItems = [
 ]
 
 export default function Home() {
-  const { isExpanded } = useTelegram()
+  const { isExpanded, userId } = useTelegram()
+  const [taskStats, setTaskStats] = useState<TaskStats>({ overdue: 0, completed: 0, total: 0 })
+  const [habitStats, setHabitStats] = useState<HabitStats>({ completedToday: 0, totalHabits: 0, streak: 0 })
+  const [contactStats, setContactStats] = useState<ContactStats>({ totalContacts: 0, activeChats: 0 })
+
+  // Загрузка статистики задач
+  const loadTaskStats = async () => {
+    try {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const { data: tasks, error } = await supabase
+        .from('todos')
+        .select('*')
+        .eq('telegram_id', userId)
+        .eq('is_habit', false)
+
+      if (error) throw error
+
+      const overdue = tasks?.filter(task => 
+        !task.done && new Date(task.deadline) < new Date()
+      ).length || 0
+
+      const completed = tasks?.filter(task => task.done).length || 0
+      const total = tasks?.length || 0
+
+      setTaskStats({ overdue, completed, total })
+    } catch (error) {
+      logger.error('Ошибка при загрузке статистики задач:', error)
+    }
+  }
+
+  // Загрузка статистики привычек
+  const loadHabitStats = async () => {
+    try {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      // Получаем все привычки
+      const { data: habits, error: habitsError } = await supabase
+        .from('habits')
+        .select('*')
+        .eq('telegram_id', userId)
+        .eq('active', true)
+
+      if (habitsError) throw habitsError
+
+      // Получаем логи за сегодня
+      const { data: logs, error: logsError } = await supabase
+        .from('habit_logs')
+        .select('*')
+        .gte('completed_at', today.toISOString())
+
+      if (logsError) throw logsError
+
+      const completedToday = new Set(logs?.map(log => log.habit_id)).size
+      const totalHabits = habits?.length || 0
+
+      setHabitStats({ 
+        completedToday,
+        totalHabits,
+        streak: 0 // TODO: Добавить расчет серии
+      })
+    } catch (error) {
+      logger.error('Ошибка при загрузке статистики привычек:', error)
+    }
+  }
+
+  // Загрузка статистики контактов
+  const loadContactStats = async () => {
+    try {
+      const { data: contacts, error } = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('telegram_id', userId)
+
+      if (error) throw error
+
+      const totalContacts = contacts?.length || 0
+      const activeChats = contacts?.filter(contact => contact.last_message_at).length || 0
+
+      setContactStats({ totalContacts, activeChats })
+    } catch (error) {
+      logger.error('Ошибка при загрузке статистики контактов:', error)
+    }
+  }
 
   useEffect(() => {
-    logger.info('Главная страница загружена')
-  }, [])
+    if (userId) {
+      loadTaskStats()
+      loadHabitStats()
+      loadContactStats()
+
+      // Подписываемся на изменения в задачах
+      const unsubscribeTasks = realtime.subscribe(`todos-${userId}`, () => {
+        loadTaskStats()
+      })
+
+      // Подписываемся на изменения в привычках
+      const unsubscribeHabits = habitsRealtime.subscribe(`habits-${userId}`, () => {
+        loadHabitStats()
+      })
+
+      return () => {
+        unsubscribeTasks()
+        unsubscribeHabits()
+      }
+    }
+  }, [userId])
 
   return (
     <motion.div 
@@ -212,9 +336,53 @@ export default function Home() {
                         {item.title}
                       </motion.h2>
                       
-                      <p className="text-base text-white/70 font-light leading-relaxed">
+                      <p className="text-base text-white/70 font-light leading-relaxed mb-6">
                         {item.description}
                       </p>
+
+                      {/* Stats Section */}
+                      <div className="mt-auto">
+                        {item.href === '/tasks' && (
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <Icon icon="ph:clock-countdown-duotone" className="w-5 h-5 text-white/60" />
+                              <span className="text-sm text-white/60">{taskStats.overdue} просрочено</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Icon icon="ph:check-circle-duotone" className="w-5 h-5 text-white/60" />
+                              <span className="text-sm text-white/60">{taskStats.completed}/{taskStats.total}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {item.href === '/habits' && (
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <Icon icon="ph:chart-line-up-duotone" className="w-5 h-5 text-white/60" />
+                              <span className="text-sm text-white/60">{habitStats.completedToday}/{habitStats.totalHabits} сегодня</span>
+                            </div>
+                            {habitStats.streak > 0 && (
+                              <div className="flex items-center gap-2">
+                                <Icon icon="ph:flame-duotone" className="w-5 h-5 text-white/60" />
+                                <span className="text-sm text-white/60">{habitStats.streak}д серия</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {item.href === '/contacts' && (
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <Icon icon="ph:users-three-duotone" className="w-5 h-5 text-white/60" />
+                              <span className="text-sm text-white/60">{contactStats.totalContacts} контактов</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Icon icon="ph:chat-circle-dots-duotone" className="w-5 h-5 text-white/60" />
+                              <span className="text-sm text-white/60">{contactStats.activeChats} активных</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
                       {/* Hover Arrow */}
                       <motion.div
