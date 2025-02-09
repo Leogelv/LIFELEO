@@ -6,6 +6,7 @@ import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { DraggableTask } from './DraggableTask'
 import { Icon } from '@iconify/react'
+import { Todo } from '@/types/todo'
 
 export type CalendarMode = 'sport' | 'water' | 'sleep' | 'tasks'
 export type CalendarView = 'month' | '3days' | 'week'
@@ -23,29 +24,22 @@ interface Session {
   quality?: number
 }
 
-interface Todo {
-  id: string
-  name: string
-  done: boolean
-  deadline: string
-  telegram_id: number
-  comment?: string
-}
-
 interface UniversalCalendarGridProps {
   currentDate: Date
-  todos: Todo[]
+  todos?: Todo[]
+  sessions?: Session[]
   mode: CalendarMode
-  view: CalendarView
-  onViewChange: (view: CalendarView) => void
+  view?: CalendarView
+  onViewChange?: (view: CalendarView) => void
   onTaskMove?: (taskId: string, newDate: Date) => void
 }
 
 export function UniversalCalendarGrid({ 
   currentDate, 
-  todos, 
+  todos = [], 
+  sessions = [],
   mode, 
-  view, 
+  view = 'month', 
   onViewChange,
   onTaskMove 
 }: UniversalCalendarGridProps) {

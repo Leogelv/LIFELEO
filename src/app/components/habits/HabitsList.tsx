@@ -9,6 +9,7 @@ import { UserIdContext } from '@/contexts/UserIdContext'
 import { HabitCard } from './HabitCard'
 import { EditHabitModal } from './EditHabitModal'
 import { type HabitCategory } from './config/categoryConfig'
+import { habitsRealtime } from '@/utils/habits-realtime'
 
 interface Habit {
   id: string
@@ -31,9 +32,9 @@ interface HabitLog {
 export default function HabitsList() {
   const [habits, setHabits] = useState<Habit[]>([])
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const userId = useContext(UserIdContext)
 
-  // Загрузка привычек
   useEffect(() => {
     const fetchHabits = async () => {
       try {
@@ -42,63 +43,65 @@ export default function HabitsList() {
           .from('habits')
           .select('*')
           .eq('telegram_id', userId)
-          .eq('active', true)
-          .order('created_at', { ascending: false })
 
-        if (error) {
-          logger.error('Ошибка при загрузке привычек', { error })
-          toast.error('Не удалось загрузить привычки')
-          return
-        }
+        if (error) throw error
 
         logger.info('Привычки успешно загружены', { count: data?.length })
         setHabits(data || [])
       } catch (error) {
         logger.error('Неожиданная ошибка при загрузке привычек', { error })
         toast.error('Что-то пошло не так')
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    // Подписка на изменения
-    const channel = supabase.channel('habits-channel')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'habits',
-          filter: `telegram_id=eq.${userId}`
-        },
-        (payload) => {
-          logger.debug('Получено изменение в привычках', { 
-            eventType: payload.eventType,
-            newData: payload.new,
-            oldData: payload.old
-          })
-
-          if (payload.eventType === 'INSERT') {
-            setHabits(current => [...current, payload.new as Habit])
-          } 
-          else if (payload.eventType === 'DELETE') {
-            setHabits(current => current.filter(habit => habit.id !== payload.old.id))
-          } 
-          else if (payload.eventType === 'UPDATE') {
-            setHabits(current => 
-              current.map(habit => 
-                habit.id === payload.new.id ? payload.new as Habit : habit
-              )
-            )
-          }
-        }
-      )
-      .subscribe()
+    let unsubscribe: (() => void) | undefined
 
     if (userId) {
       fetchHabits()
+      
+      // Подписываемся на изменения через habitsRealtime менеджер
+      unsubscribe = habitsRealtime.subscribe(`habits-${userId}`, (payload) => {
+        // Проверяем что это наша привычка
+        const isOurHabit = (
+          (payload.new && 'telegram_id' in payload.new && payload.new.telegram_id === userId) ||
+          (payload.old && 'telegram_id' in payload.old && payload.old.telegram_id === userId)
+        )
+
+        if (!isOurHabit) return
+
+        logger.info('🔄 Realtime: Получено изменение в привычках', { 
+          eventType: payload.eventType,
+          habit: payload.new?.name || payload.old?.name,
+          id: payload.new?.id || payload.old?.id
+        })
+        
+        try {
+          if (payload.eventType === 'INSERT') {
+            logger.debug('📥 Добавляем новую привычку', payload.new)
+            setHabits(current => [...current, payload.new as Habit])
+          } 
+          else if (payload.eventType === 'DELETE') {
+            logger.debug('🗑️ Удаляем привычку', payload.old)
+            setHabits(current => current.filter(h => h.id !== payload.old.id))
+          } 
+          else if (payload.eventType === 'UPDATE') {
+            logger.debug('✏️ Обновляем привычку', payload.new)
+            setHabits(current => 
+              current.map(h => h.id === payload.new.id ? payload.new as Habit : h)
+            )
+          }
+        } catch (error) {
+          logger.error('🔄 Ошибка при обработке realtime события:', error)
+        }
+      })
     }
 
     return () => {
-      channel.unsubscribe()
+      if (unsubscribe) {
+        unsubscribe()
+      }
     }
   }, [userId])
 

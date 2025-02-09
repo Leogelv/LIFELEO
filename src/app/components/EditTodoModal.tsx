@@ -7,6 +7,9 @@ import { Icon } from '@iconify/react'
 import { RichTextEditor } from './RichTextEditor'
 import { supabase } from '@/utils/supabase/client'
 import { toast } from 'sonner'
+import { Todo } from '@/types/todo'
+import { realtime } from '@/utils/realtime'
+import { logger } from '@/utils/logger'
 
 // Категории
 const categories = [
@@ -27,21 +30,6 @@ interface Subtask {
   created_at: string
 }
 
-interface Todo {
-  id: string
-  name: string
-  done: boolean
-  created_at: string
-  deadline: string
-  telegram_id: number
-  notes?: string
-  repeat_type?: 'daily' | 'weekly' | 'monthly'
-  repeat_ends?: string
-  is_habit: boolean
-  category?: string
-  tags?: string[]
-}
-
 interface EditTodoModalProps {
   todo: Todo | null
   onClose: () => void
@@ -55,20 +43,54 @@ export function EditTodoModal({ todo, onClose, onSave }: EditTodoModalProps) {
   const [deadline, setDeadline] = useState<Date | null>(todo?.deadline ? new Date(todo.deadline) : null)
 
   // Загрузка подзадач
+  const loadSubtasks = async () => {
+    if (!todo) return
+
+    try {
+      logger.debug('📝 Загружаем подзадачи для', { todoId: todo.id })
+      const { data, error } = await supabase
+        .from('subtasks')
+        .select('*')
+        .eq('todo_id', todo.id)
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+
+      logger.info('✅ Подзадачи загружены', { count: data.length })
+      setSubtasks(data)
+    } catch (error) {
+      logger.error('❌ Ошибка при загрузке подзадач', { error })
+      toast.error('Не удалось загрузить подзадачи')
+    }
+  }
+
   useEffect(() => {
     if (todo) {
-      const fetchSubtasks = async () => {
-        const { data, error } = await supabase
-          .from('subtasks')
-          .select('*')
-          .eq('todo_id', todo.id)
-          .order('created_at', { ascending: true })
+      loadSubtasks()
 
-        if (!error && data) {
-          setSubtasks(data)
-        }
+      // Подписываемся на изменения в подзадачах
+      const unsubscribe = realtime.subscribe(`subtasks-${todo.id}`, (payload) => {
+        // Проверяем что это наша подзадача
+        const isOurSubtask = (
+          (payload.new && 'todo_id' in payload.new && payload.new.todo_id === todo.id) ||
+          (payload.old && 'todo_id' in payload.old && payload.old.todo_id === todo.id)
+        )
+
+        if (!isOurSubtask) return
+
+        logger.info('🔄 Realtime: Получено изменение в подзадачах', { 
+          eventType: payload.eventType,
+          todoId: todo.id,
+          subtaskId: payload.new?.id || payload.old?.id
+        })
+
+        // Перезагружаем подзадачи при любых изменениях
+        loadSubtasks()
+      })
+
+      return () => {
+        unsubscribe()
       }
-      fetchSubtasks()
     }
   }, [todo])
 
@@ -78,21 +100,30 @@ export function EditTodoModal({ todo, onClose, onSave }: EditTodoModalProps) {
   const handleAddSubtask = async () => {
     if (!newSubtask.trim()) return
 
-    const { data, error } = await supabase
-      .from('subtasks')
-      .insert({
-        todo_id: editingTodo.id,
-        name: newSubtask.trim(),
-        done: false
+    try {
+      logger.debug('➕ Добавляем подзадачу', { 
+        todoId: editingTodo.id, 
+        name: newSubtask 
       })
-      .select()
-      .single()
 
-    if (!error && data) {
+      const { data, error } = await supabase
+        .from('subtasks')
+        .insert({
+          todo_id: editingTodo.id,
+          name: newSubtask.trim(),
+          done: false
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      logger.info('✅ Подзадача добавлена')
       setSubtasks([...subtasks, data])
       setNewSubtask('')
       toast.success('Подзадача добавлена')
-    } else {
+    } catch (error) {
+      logger.error('❌ Ошибка при добавлении подзадачи', { error })
       toast.error('Не удалось добавить подзадачу')
     }
   }
@@ -102,18 +133,27 @@ export function EditTodoModal({ todo, onClose, onSave }: EditTodoModalProps) {
     const subtask = subtasks.find(s => s.id === subtaskId)
     if (!subtask) return
 
-    const newDoneState = !subtask.done
-    const { error } = await supabase
-      .from('subtasks')
-      .update({ done: newDoneState })
-      .eq('id', subtaskId)
+    try {
+      const newDoneState = !subtask.done
+      logger.debug('🔄 Переключаем статус подзадачи', { 
+        subtaskId, 
+        newState: newDoneState 
+      })
 
-    if (!error) {
+      const { error } = await supabase
+        .from('subtasks')
+        .update({ done: newDoneState })
+        .eq('id', subtaskId)
+
+      if (error) throw error
+
+      logger.info('✅ Статус подзадачи обновлен')
       setSubtasks(subtasks.map(s => 
         s.id === subtaskId ? { ...s, done: newDoneState } : s
       ))
       toast.success(newDoneState ? 'Подзадача выполнена' : 'Подзадача возвращена')
-    } else {
+    } catch (error) {
+      logger.error('❌ Ошибка при обновлении статуса', { error })
       toast.error('Не удалось обновить статус')
     }
   }
@@ -142,16 +182,57 @@ export function EditTodoModal({ todo, onClose, onSave }: EditTodoModalProps) {
     }
   }
 
-  const addHours = (hours: number) => {
-    const newDate = new Date()
-    newDate.setHours(newDate.getHours() + hours)
+  // Обновление дедлайна с автосохранением
+  const updateDeadline = async (newDate: Date | null) => {
+    if (!editingTodo) return
+    
     setDeadline(newDate)
+    setEditingTodo({ 
+      ...editingTodo, 
+      deadline: newDate ? newDate.toISOString() : editingTodo.deadline 
+    })
+
+    const { error } = await supabase
+      .from('todos')
+      .update({ 
+        deadline: newDate ? newDate.toISOString() : editingTodo.deadline 
+      })
+      .eq('id', editingTodo.id)
+
+    if (error) {
+      toast.error('Не удалось обновить дедлайн')
+    }
   }
 
-  const addDays = (days: number) => {
-    const newDate = new Date()
-    newDate.setDate(newDate.getDate() + days)
-    setDeadline(newDate)
+  // Быстрые действия с датой
+  const addHours = async (hours: number) => {
+    if (!deadline) {
+      const now = new Date()
+      now.setHours(now.getHours() + hours)
+      await updateDeadline(now)
+    } else {
+      const newDate = new Date(deadline)
+      newDate.setHours(newDate.getHours() + hours)
+      await updateDeadline(newDate)
+    }
+  }
+
+  const addDays = async (days: number) => {
+    if (!deadline) {
+      const now = new Date()
+      now.setDate(now.getDate() + days)
+      await updateDeadline(now)
+    } else {
+      const newDate = new Date(deadline)
+      newDate.setDate(newDate.getDate() + days)
+      await updateDeadline(newDate)
+    }
+  }
+
+  const setToday = async () => {
+    const now = new Date()
+    now.setHours(23, 59, 0, 0) // Устанавливаем на конец текущего дня
+    await updateDeadline(now)
   }
 
   return (
@@ -201,10 +282,10 @@ export function EditTodoModal({ todo, onClose, onSave }: EditTodoModalProps) {
             <input
               type="datetime-local"
               value={deadline ? format(deadline, "yyyy-MM-dd'T'HH:mm") : ''}
-              onChange={(e) => setDeadline(e.target.value ? new Date(e.target.value) : null)}
+              onChange={(e) => updateDeadline(e.target.value ? new Date(e.target.value) : null)}
               className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
             />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => addHours(1)}
@@ -225,6 +306,13 @@ export function EditTodoModal({ todo, onClose, onSave }: EditTodoModalProps) {
                 className="px-3 py-1 text-sm bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white"
               >
                 +1 день
+              </button>
+              <button
+                type="button"
+                onClick={setToday}
+                className="px-3 py-1 text-sm bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-emerald-400"
+              >
+                Сегодня
               </button>
             </div>
           </div>

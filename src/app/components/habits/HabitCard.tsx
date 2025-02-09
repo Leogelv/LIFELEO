@@ -10,6 +10,7 @@ import { UserIdContext } from '@/contexts/UserIdContext'
 import { format, subDays } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { categoryConfig, type HabitCategory } from './config/categoryConfig'
+import { MeditationGuide } from './MeditationGuide'
 
 interface HabitStats {
   total_value: number
@@ -46,6 +47,7 @@ interface QuickAddButtonProps {
 export function HabitCard({ habit, onEdit }: HabitCardProps) {
   const [showQuickInput, setShowQuickInput] = useState(false)
   const [showStats, setShowStats] = useState(false)
+  const [showMeditationGuide, setShowMeditationGuide] = useState(false)
   const [stats, setStats] = useState<HabitStats | null>(null)
   const [dailyValues, setDailyValues] = useState<{date: string, value: number}[]>([])
   const [todayProgress, setTodayProgress] = useState(0)
@@ -238,9 +240,22 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
             <div className="p-2 rounded-xl bg-white/10 text-blue-400">
               <Icon icon="mdi:check" className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-medium text-white">
+            <h3 className="text-xl font-medium text-white flex-1">
               {habit.name}
             </h3>
+            {habit.category === 'meditation' && (
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowMeditationGuide(true)
+                }}
+                className="p-2 rounded-xl bg-purple-400/20 text-purple-400 hover:bg-purple-400/30 transition-colors"
+              >
+                <Icon icon="solar:meditation-bold" className="w-5 h-5" />
+              </motion.button>
+            )}
           </div>
 
           {/* Прогресс */}
@@ -357,6 +372,29 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
                   </div>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Модальное окно гайда по медитации */}
+      <AnimatePresence>
+        {showMeditationGuide && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowMeditationGuide(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="w-full max-w-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <MeditationGuide habit={habit} />
             </motion.div>
           </motion.div>
         )}

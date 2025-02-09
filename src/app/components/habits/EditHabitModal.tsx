@@ -9,6 +9,8 @@ import { toast } from 'sonner'
 import { MeditationGuide } from './MeditationGuide'
 import { format, subDays } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { habitsRealtime } from '@/utils/habits-realtime'
+import { logger } from '@/utils/logger'
 
 interface EditHabitModalProps {
   habit: {
@@ -86,7 +88,7 @@ export function EditHabitModal({ habit, onClose, onSave }: EditHabitModalProps) 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        console.log('🚀 Начинаем загрузку статы для привычки:', habit)
+        logger.debug('🚀 Начинаем загрузку статы для привычки:', habit)
 
         // Получаем данные за последние 30 дней
         const thirtyDaysAgo = new Date()
@@ -180,12 +182,42 @@ export function EditHabitModal({ habit, onClose, onSave }: EditHabitModalProps) 
         setStats(stats)
 
       } catch (error) {
-        console.error('🔥 Ошибка при загрузке статистики:', error)
+        logger.error('🔥 Ошибка при загрузке статистики:', error)
         toast.error('Не удалось загрузить статистику')
       }
     }
 
     loadStats()
+
+    // Подписываемся на изменения в логах привычки через habitsRealtime
+    const unsubscribe = habitsRealtime.subscribe(`habit-${habit.id}`, (payload) => {
+      // Проверяем что это наша привычка или её лог
+      const isOurHabit = (
+        (payload.new && (
+          ('id' in payload.new && payload.new.id === habit.id) || 
+          ('habit_id' in payload.new && payload.new.habit_id === habit.id)
+        )) ||
+        (payload.old && (
+          ('id' in payload.old && payload.old.id === habit.id) ||
+          ('habit_id' in payload.old && payload.old.habit_id === habit.id)
+        ))
+      )
+
+      if (!isOurHabit) return
+
+      logger.info('🔄 Realtime: Получено изменение в привычке или логах', { 
+        table: payload.table,
+        eventType: payload.eventType,
+        habitId: habit.id
+      })
+
+      // Перезагружаем статистику при любых изменениях
+      loadStats()
+    })
+
+    return () => {
+      unsubscribe()
+    }
   }, [habit.id, habit.target_value])
 
   const handleSave = async () => {

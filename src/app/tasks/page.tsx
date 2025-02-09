@@ -16,27 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTelegram } from '@/app/hooks/useTelegram'
 import { logger } from '@/utils/logger'
 import { Icon } from '@/app/components/Icon'
-
-interface Todo {
-  id: string
-  name: string
-  done: boolean
-  created_at: string
-  deadline: string
-  telegram_id: number
-  is_habit: boolean
-  category?: string
-  tags?: string[]
-  notes?: string
-  target_value?: number
-  repeat_type?: 'daily' | 'weekly'
-  repeat_ends?: string
-}
-
-const categories = [
-  { id: 'work', name: 'Работа', icon: 'solar:laptop-bold', color: 'rose' },
-  { id: 'home', name: 'Быт', icon: 'solar:home-2-bold', color: 'orange' }
-]
+import { Todo } from '@/types/todo'
 
 export default function TasksPage() {
   const { isExpanded, userId } = useTelegram()
@@ -49,14 +29,17 @@ export default function TasksPage() {
   const [repeatType, setRepeatType] = useState<'daily' | 'weekly' | null>('daily')
   const [repeatEnds, setRepeatEnds] = useState<Date | null>(null)
   const [calendarView, setCalendarView] = useState<'month' | '3days' | 'week'>('month')
-  const [deadline, setDeadline] = useState(new Date())
+  const [deadline, setDeadline] = useState(() => {
+    const date = new Date()
+    date.setHours(date.getHours() + 1)
+    return date
+  })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [todos, setTodos] = useState<Todo[]>([])
   const userIdContext = useContext(UserIdContext)
   const [listView, setListView] = useState<'horizontal' | 'vertical'>('horizontal')
-  const [hideCompleted, setHideCompleted] = useState(false)
+  const [hideCompleted, setHideCompleted] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [tags, setTags] = useState<string[]>([])
   const [showCalendar, setShowCalendar] = useState(false)
 
   useEffect(() => {
@@ -72,7 +55,7 @@ export default function TasksPage() {
       logger.debug('Попытка добавить таск', {
         task: newTask,
         category: selectedCategory,
-        tags,
+        deadline: deadline.toISOString()
       })
 
       // Оптимистичное обновление UI
@@ -80,12 +63,11 @@ export default function TasksPage() {
         id: 'temp-' + Date.now(),
         name: newTask.trim(),
         done: false,
-        deadline: new Date().toISOString(),
+        deadline: deadline.toISOString(),
         telegram_id: currentUserId,
         created_at: new Date().toISOString(),
         is_habit: false,
         category: selectedCategory || undefined,
-        tags: tags.length > 0 ? tags : undefined,
         notes: comment.trim() || undefined,
         repeat_type: repeatType || undefined,
         repeat_ends: repeatEnds?.toISOString()
@@ -97,11 +79,10 @@ export default function TasksPage() {
         .insert([{
           name: newTask.trim(),
           done: false,
-          deadline: new Date().toISOString(),
+          deadline: deadline.toISOString(),
           telegram_id: currentUserId,
           is_habit: false,
           category: selectedCategory || undefined,
-          tags: tags.length > 0 ? tags : undefined,
           notes: comment.trim() || undefined,
           repeat_type: repeatType || undefined,
           repeat_ends: repeatEnds?.toISOString()
@@ -120,7 +101,10 @@ export default function TasksPage() {
         setRepeatType('daily')
         setRepeatEnds(null)
         setSelectedCategory('')
-        setTags([])
+        // Устанавливаем новый дедлайн (текущее время + 1 час)
+        const newDeadline = new Date()
+        newDeadline.setHours(newDeadline.getHours() + 1)
+        setDeadline(newDeadline)
         toast.success('Задача добавлена')
       }
     } catch (error) {
@@ -230,29 +214,6 @@ export default function TasksPage() {
                       hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-rose-400/50
                       min-h-[100px] resize-none"
                   />
-
-                  {/* Категории */}
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {categories.map(category => (
-                      <motion.button
-                        key={category.id}
-                        type="button"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setSelectedCategory(category.id)}
-                        className={`
-                          flex items-center gap-2 px-3 py-2 rounded-xl transition-colors whitespace-nowrap
-                          ${category.id === selectedCategory 
-                            ? `bg-${category.color}-400/20 text-${category.color}-400 border border-${category.color}-400/30` 
-                            : 'bg-white/5 hover:bg-white/10 border border-white/10'
-                          }
-                        `}
-                      >
-                        <Icon icon={category.icon} className="w-5 h-5" />
-                        <span>{category.name}</span>
-                      </motion.button>
-                    ))}
-                  </div>
 
                   {/* Дата и время */}
                   <div className="flex gap-2">

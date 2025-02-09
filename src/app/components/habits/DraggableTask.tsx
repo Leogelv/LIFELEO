@@ -5,15 +5,7 @@ import { format, isAfter } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { Icon } from '@iconify/react'
 import { useState } from 'react'
-
-interface Todo {
-  id: string
-  name: string
-  done: boolean
-  deadline: string
-  telegram_id: number
-  comment?: string
-}
+import { Todo } from '@/types/todo'
 
 interface DraggableTaskProps {
   task: Todo

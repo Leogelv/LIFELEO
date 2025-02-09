@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/utils/supabase/client'
+import { habitsRealtime } from '@/utils/habits-realtime'
+import { logger } from '@/utils/logger'
+import { UserIdContext } from '@/contexts/UserIdContext'
 
 interface MeditationStats {
   totalHours: number
@@ -85,37 +88,81 @@ const meditationStages: Stage[] = [
   }
 ]
 
-export function MeditationGuide() {
+interface MeditationGuideProps {
+  habit: {
+    id: string
+    name: string
+    category: string
+  }
+}
+
+export function MeditationGuide({ habit }: MeditationGuideProps) {
   const [stats, setStats] = useState<MeditationStats | null>(null)
   const [currentStage, setCurrentStage] = useState<Stage | null>(null)
+  const userId = useContext(UserIdContext)
 
-  useEffect(() => {
-    const loadMeditationStats = async () => {
+  const loadMeditationStats = async () => {
+    try {
+      logger.debug('🧘‍♂️ Загружаем статистику медитаций')
+      
       const { data, error } = await supabase
         .from('habit_logs')
-        .select('value')
-        .eq('category', 'meditation')
+        .select('value, completed_at')
+        .eq('habit_id', habit.id)
         .order('completed_at', { ascending: false })
 
-      if (!error && data) {
+      if (error) throw error
+
+      if (data) {
         const totalMinutes = data.reduce((sum, log) => sum + log.value, 0)
         const totalHours = totalMinutes / 60
-        const averageDaily = totalMinutes / 30 / 60 // среднее за последние 30 дней
 
+        // Считаем среднее за последние 30 дней
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        
+        const recentLogs = data.filter(log => 
+          new Date(log.completed_at) >= thirtyDaysAgo
+        )
+        
+        const averageDaily = recentLogs.reduce((sum, log) => sum + log.value, 0) / 30 / 60
+
+        logger.info('📊 Статистика загружена', { totalHours, averageDaily })
         setStats({ totalHours, averageDaily })
 
         // Определяем текущий этап
         const stage = meditationStages.findLast(stage => totalHours >= stage.minHours)
         setCurrentStage(stage || meditationStages[0])
       }
+    } catch (error) {
+      logger.error('❌ Ошибка при загрузке статистики', error)
     }
+  }
 
+  useEffect(() => {
     loadMeditationStats()
-  }, [])
+
+    // Подписываемся на изменения в логах
+    const unsubscribe = habitsRealtime.subscribe(`meditation-logs`, (payload) => {
+      if (payload.table === 'habit_logs' && 
+          'habit_id' in payload.new && 
+          payload.new.habit_id === habit.id) {
+        logger.info('🔄 Получено изменение в логах медитации')
+        loadMeditationStats()
+      }
+    })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [habit.id])
 
   if (!stats || !currentStage) return null
 
   const nextStage = meditationStages.find(stage => stage.minHours > stats.totalHours)
+  const progress = nextStage 
+    ? (stats.totalHours / nextStage.minHours) * 100 
+    : 100
 
   return (
     <div className="space-y-6 p-6 bg-zinc-900/50 rounded-2xl backdrop-blur-xl">
@@ -177,14 +224,26 @@ export function MeditationGuide() {
               <motion.div
                 className="h-full bg-purple-400"
                 initial={{ width: 0 }}
-                animate={{ 
-                  width: `${(stats.totalHours / nextStage.minHours) * 100}%`
-                }}
+                animate={{ width: `${progress}%` }}
               />
             </div>
           </div>
         </div>
       )}
+
+      {/* Рекомендация на сегодня */}
+      <div className="p-4 rounded-xl bg-purple-400/10 border border-purple-400/20">
+        <h4 className="text-lg font-medium text-purple-400 mb-2">
+          Рекомендация на сегодня
+        </h4>
+        <p className="text-white/80">
+          {stats.totalHours < 20 
+            ? "Практикуйте Анапану: сосредоточьтесь на дыхании в области носа. Начните с 20-30 минут утром и вечером."
+            : stats.totalHours < 50
+            ? "Продолжайте Анапану, но старайтесь удерживать внимание на более тонких ощущениях. Практикуйте 1 час в день."
+            : "Вы готовы к практике Випассаны. Начните с систематического сканирования тела. Поддерживайте практику 1 час утром и вечером."}
+        </p>
+      </div>
     </div>
   )
 } 

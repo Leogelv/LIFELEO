@@ -8,21 +8,12 @@ import { Icon } from '@iconify/react'
 import { MdOutlineCalendarToday, MdCheck, MdOutlineAccessTime, MdDelete, MdOutlineRepeat, MdOutlineNotes, MdOutlineChecklist } from 'react-icons/md'
 import { supabase } from '@/utils/supabase/client'
 import { toast } from 'sonner'
+import { Todo } from '@/types/todo'
 
 interface TodoCardProps {
-  todo: {
-    id: string
-    name: string
-    done: boolean
-    deadline: string
-    notes?: string
-    repeat_type?: 'daily' | 'weekly' | 'monthly'
-    category?: string
-    is_habit?: boolean
-    tags?: string[]
-  }
+  todo: Todo
   onToggle: (id: string) => void
-  onEdit: (todo: any) => void
+  onEdit: (todo: Todo) => void
   onDelete: (id: string) => void
   listView: 'horizontal' | 'vertical'
 }
@@ -86,27 +77,30 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete, listView }: TodoCar
 
   // Функция для выполнения и пересоздания задачи
   const completeAndRecreate = async () => {
-    // Сначала отмечаем текущую задачу как выполненную
+    // Сначала отмечаем текущую задачу как выполненной
     onToggle(todo.id)
 
-    // Создаем новую задачу через 24 часа
-    const newDeadline = new Date(todo.deadline)
-    newDeadline.setHours(newDeadline.getHours() + 24)
+    // Создаем новую задачу на следующий день в то же время
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(new Date(todo.deadline).getHours())
+    tomorrow.setMinutes(new Date(todo.deadline).getMinutes())
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('todos')
       .insert({
         ...todo,
         id: undefined, // Позволяем базе данных создать новый ID
         done: false,
-        deadline: newDeadline.toISOString(),
+        deadline: tomorrow.toISOString(),
         created_at: new Date().toISOString()
       })
+      .select()
 
     if (error) {
       toast.error('Не удалось создать новую задачу')
     } else {
-      toast.success('Задача выполнена и пересоздана')
+      toast.success('Задача выполнена и пересоздана на завтра')
     }
   }
 
@@ -163,7 +157,10 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete, listView }: TodoCar
 
           {/* Дедлайн */}
           {todo.deadline && (
-            <div className="flex items-center gap-2 text-sm text-white/60">
+            <div className={`
+              flex items-center gap-2 text-sm 
+              ${new Date(todo.deadline) < new Date() ? 'text-red-400' : 'text-white/60'}
+            `}>
               <MdOutlineAccessTime className="w-4 h-4 shrink-0" />
               <span>{format(new Date(todo.deadline), 'dd MMM, HH:mm', { locale: ru })}</span>
             </div>

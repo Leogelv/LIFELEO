@@ -39,7 +39,7 @@ export function AddHabitModal({ isOpen, onClose, onHabitAdded }: AddHabitModalPr
   // Создание привычки
   const handleSubmit = async () => {
     setIsLoading(true)
-    logger.info('Создаем привычку', { 
+    logger.info('🎯 Создаем привычку', { 
       category: selectedCategory.id, 
       targetValue, 
       repeatType,
@@ -59,12 +59,13 @@ export function AddHabitModal({ isOpen, onClose, onHabitAdded }: AddHabitModalPr
 
       if (error) throw error
 
+      logger.info('✅ Привычка успешно создана')
       toast.success('Привычка создана!')
       onHabitAdded()
       onClose()
       resetForm()
     } catch (error) {
-      logger.error('Ошибка при создании привычки', { error })
+      logger.error('❌ Ошибка при создании привычки', { error })
       toast.error('Не удалось создать привычку')
     } finally {
       setIsLoading(false)

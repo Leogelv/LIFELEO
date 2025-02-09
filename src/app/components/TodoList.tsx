@@ -3,115 +3,37 @@
 import { supabase } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { format, addHours, addDays, formatDistanceToNow, isAfter } from 'date-fns'
+import { format, addDays, isAfter } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { UserIdContext } from '@/app/contexts/UserContext'
 import { useContext } from 'react'
-import { IoTimeOutline } from 'react-icons/io5'
-import { MdOutlineCalendarToday, MdCheck, MdOutlineAccessTime, MdDelete, MdOutlineRepeat, MdOutlineNotes, MdViewList, MdGridView, MdDoneAll, MdPendingActions } from 'react-icons/md'
+import { MdViewList, MdGridView, MdDoneAll, MdPendingActions } from 'react-icons/md'
 import { logger } from '@/utils/logger'
-import { Icon } from '@iconify/react'
-import { useContacts } from '@/app/hooks/useContacts'
 import { TodoCard } from '@/app/components/TodoCard'
 import { EditTodoModal } from '@/app/components/EditTodoModal'
-
-// Категории
-const categories = [
-  { id: 'water', name: 'Вода', icon: 'solar:glass-water-bold', color: 'blue' },
-  { id: 'sport', name: 'Спорт', icon: 'solar:running-round-bold', color: 'green' },
-  { id: 'meditation', name: 'Медитация', icon: 'solar:meditation-bold', color: 'purple' },
-  { id: 'work', name: 'Работа', icon: 'solar:laptop-bold', color: 'rose' },
-  { id: 'music', name: 'Музыка', icon: 'solar:music-notes-bold', color: 'pink' },
-  { id: 'home', name: 'Быт', icon: 'solar:home-2-bold', color: 'orange' },
-  { id: 'finance', name: 'Финансы', icon: 'solar:wallet-money-bold', color: 'emerald' }
-]
-
-// Вспомогательные функции для работы с категориями
-const getCategoryStyle = (categoryId: string) => {
-  const category = categories.find(c => c.id === categoryId)
-  if (!category) return 'bg-white/10 text-white/60'
-  return `bg-${category.color}-400/20 text-${category.color}-400`
-}
-
-const getCategoryIcon = (categoryId: string) => {
-  const category = categories.find(c => c.id === categoryId)
-  return category?.icon || 'solar:tag-bold'
-}
-
-const getCategoryName = (categoryId: string) => {
-  const category = categories.find(c => c.id === categoryId)
-  return category?.name || categoryId
-}
-
-type Subtask = {
-  id: string
-  todo_id: string
-  name: string
-  done: boolean
-  created_at: string
-}
-
-type Todo = {
-  id: string
-  name: string
-  done: boolean
-  created_at: string
-  deadline: string
-  telegram_id: number
-  notes?: string
-  repeat_type?: 'daily' | 'weekly' | 'monthly'
-  repeat_ends?: string
-  is_habit: boolean
-  category?: string
-  tags?: string[]
-  contact_id?: string | null
-}
+import { Todo } from '@/types/todo'
+import { realtime } from '@/utils/realtime'
 
 interface TodoListProps {
   initialTodos: Todo[]
   onTodosChange?: (todos: Todo[]) => void
-  showHabits?: boolean
+  listView?: 'vertical' | 'horizontal'
+  hideCompleted?: boolean
 }
 
-// Добавляем интерфейс для значений привычек
-const habitValues = {
-  water: [
-    { value: 300, label: '300 мл' },
-    { value: 500, label: '500 мл' },
-    { value: 1000, label: '1 л' }
-  ],
-  sport: [
-    { value: 30, label: '30 мин' },
-    { value: 60, label: '1 час' },
-    { value: 90, label: '1.5 часа' }
-  ],
-  meditation: [
-    { value: 10, label: '10 мин' },
-    { value: 30, label: '30 мин' },
-    { value: 60, label: '1 час' }
-  ],
-  breathing: [
-    { value: 5, label: '5 мин' },
-    { value: 10, label: '10 мин' },
-    { value: 15, label: '15 мин' }
-  ]
-}
-
-export default function TodoList({ initialTodos, onTodosChange, showHabits }: TodoListProps) {
-  // Если showHabits=true, не показываем TodoList вообще
-  if (showHabits) {
-    return null;
-  }
-
+export default function TodoList({ 
+  initialTodos, 
+  onTodosChange, 
+  listView: initialListView = 'vertical', 
+  hideCompleted: initialHideCompleted = true 
+}: TodoListProps) {
   const [todos, setTodos] = useState<Todo[]>(initialTodos)
-  const [listView, setListView] = useState<'vertical' | 'horizontal'>('vertical')
-  const [hideCompleted, setHideCompleted] = useState(true)
+  const [listView, setListView] = useState<'vertical' | 'horizontal'>(initialListView)
+  const [isHideCompleted, setIsHideCompleted] = useState(initialHideCompleted)
   const [isLoading, setIsLoading] = useState(true)
-  const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({})
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null)
   const userId = useContext(UserIdContext)
-  const { contacts } = useContacts()
 
   // Загрузка тасков
   useEffect(() => {
@@ -122,7 +44,7 @@ export default function TodoList({ initialTodos, onTodosChange, showHabits }: To
           .from('todos')
           .select('*')
           .eq('telegram_id', userId)
-          .eq('is_habit', false) // Не загружаем привычки
+          .eq('is_habit', false)
           .order('deadline', { ascending: true })
 
         if (error) {
@@ -141,46 +63,74 @@ export default function TodoList({ initialTodos, onTodosChange, showHabits }: To
       }
     }
 
-    // Подписка на изменения
-    const channel = supabase.channel('custom-all-channel')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'todos',
-          filter: `telegram_id=eq.${userId} and is_habit=eq.false`
-        },
-        (payload) => {
-          logger.debug('Получено изменение в тасках', { 
-            eventType: payload.eventType,
-            newData: payload.new,
-            oldData: payload.old
-          })
-
-          if (payload.eventType === 'INSERT') {
-            setTodos(current => sortTodos([...current, payload.new as Todo]))
-          } 
-          else if (payload.eventType === 'DELETE') {
-            setTodos(current => current.filter(todo => todo.id !== payload.old.id))
-          } 
-          else if (payload.eventType === 'UPDATE') {
-            setTodos(current => 
-              sortTodos(current.map(todo => 
-                todo.id === payload.new.id ? payload.new as Todo : todo
-              ))
-            )
-          }
-        }
-      )
-      .subscribe()
+    let unsubscribe: (() => void) | undefined
 
     if (userId) {
       fetchTodos()
+      
+      // Подписываемся на изменения через realtime менеджер
+      unsubscribe = realtime.subscribe(`todos-${userId}`, (payload) => {
+        // Проверяем что это наш таск (не хэбит и наш userId)
+        const isOurTask = (
+          (payload.new && 'telegram_id' in payload.new && 'is_habit' in payload.new && 
+           payload.new.telegram_id === userId && payload.new.is_habit === false) ||
+          (payload.old && 'telegram_id' in payload.old && 'is_habit' in payload.old && 
+           payload.old.telegram_id === userId && payload.old.is_habit === false)
+        )
+
+        if (!isOurTask) return
+
+        logger.info('🔄 Realtime: Получено изменение в тасках', { 
+          eventType: payload.eventType,
+          task: payload.new && 'name' in payload.new ? payload.new.name : 
+                payload.old && 'name' in payload.old ? payload.old.name : 'unknown',
+          id: payload.new && 'id' in payload.new ? payload.new.id : 
+              payload.old && 'id' in payload.old ? payload.old.id : 'unknown',
+          userId: userId
+        })
+        
+        if (!payload.new && !payload.old) {
+          logger.error('🔄 Realtime: Получены пустые данные')
+          return
+        }
+
+        try {
+          if (payload.eventType === 'INSERT') {
+            logger.debug('📥 Добавляем новую задачу в список', payload.new)
+            setTodos(current => {
+              const newTodos = sortTodos([...current, payload.new as Todo])
+              logger.debug('📥 Новый список задач:', newTodos)
+              return newTodos
+            })
+          } 
+          else if (payload.eventType === 'DELETE') {
+            logger.debug('🗑️ Удаляем задачу из списка', payload.old)
+            setTodos(current => {
+              const newTodos = current.filter(todo => todo.id !== payload.old.id)
+              logger.debug('🗑️ Новый список задач:', newTodos)
+              return newTodos
+            })
+          } 
+          else if (payload.eventType === 'UPDATE') {
+            logger.debug('✏️ Обновляем задачу в списке', payload.new)
+            setTodos(current => {
+              const newTodos = sortTodos(current.map(todo => 
+                todo.id === payload.new.id ? payload.new as Todo : todo
+              ))
+              logger.debug('✏️ Новый список задач:', newTodos)
+              return newTodos
+            })
+          }
+        } catch (error) {
+          logger.error('🔄 Ошибка при обработке realtime события:', error)
+        }
+      })
     }
 
     return () => {
-      channel.unsubscribe()
+      if (unsubscribe) {
+        unsubscribe()
+      }
     }
   }, [userId])
 
@@ -191,56 +141,6 @@ export default function TodoList({ initialTodos, onTodosChange, showHabits }: To
     }
   }, [todos, onTodosChange])
 
-  // Вспомогательные функции
-  const setLoadingState = (id: string, state: boolean) => {
-    setLoadingStates(prev => ({ ...prev, [id]: state }))
-  }
-
-  const createNextRecurringTask = async (todo: Todo) => {
-    if (!todo.repeat_type || !todo.deadline) return
-
-    const currentDeadline = new Date(todo.deadline)
-    let nextDeadline: Date
-
-    switch (todo.repeat_type) {
-      case 'daily':
-        nextDeadline = addDays(currentDeadline, 1)
-        break
-      case 'weekly':
-        nextDeadline = addDays(currentDeadline, 7)
-        break
-      case 'monthly':
-        nextDeadline = new Date(currentDeadline.setMonth(currentDeadline.getMonth() + 1))
-        break
-      default:
-        return
-    }
-
-    // Проверяем, не превышает ли следующая дата дату окончания повторений
-    if (todo.repeat_ends && isAfter(nextDeadline, new Date(todo.repeat_ends))) {
-      return
-    }
-
-    const { error } = await supabase
-      .from('todos')
-      .insert({
-        name: todo.name,
-        done: false,
-        deadline: nextDeadline.toISOString(),
-        telegram_id: userId,
-        notes: todo.notes,
-        repeat_type: todo.repeat_type,
-        repeat_ends: todo.repeat_ends,
-        category: todo.category,
-        tags: todo.tags
-      })
-
-    if (error) {
-      console.error('Error creating next recurring task:', error)
-      toast.error('Не удалось создать следующую повторяющуюся задачу')
-    }
-  }
-
   // Сортировка тасков
   const sortTodos = (todosToSort: Todo[]) => {
     return [...todosToSort].sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
@@ -248,10 +148,10 @@ export default function TodoList({ initialTodos, onTodosChange, showHabits }: To
 
   // Фильтруем и сортируем задачи
   const filteredTodos = sortTodos(todos.filter(todo => {
-    if (hideCompleted) {
+    if (isHideCompleted) {
       return !todo.done // Показываем только невыполненные
     }
-    return todo.done // Показываем только выполненные
+    return true // Показываем все
   }))
 
   // Обработка выполнения задачи
@@ -286,11 +186,6 @@ export default function TodoList({ initialTodos, onTodosChange, showHabits }: To
           </div>
         </div>
       )
-
-      // Если задача выполнена и имеет повторение, создаем следующую
-      if (!todo.done && todo.repeat_type) {
-        await createNextRecurringTask(todo)
-      }
 
     } catch (error) {
       logger.error('Ошибка при обновлении задачи', { error })
@@ -348,6 +243,7 @@ export default function TodoList({ initialTodos, onTodosChange, showHabits }: To
         <button
           onClick={() => setListView(prev => prev === 'vertical' ? 'horizontal' : 'vertical')}
           className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+          title="Переключить вид списка"
         >
           {listView === 'vertical' ? <MdGridView className="w-5 h-5" /> : <MdViewList className="w-5 h-5" />}
         </button>
@@ -355,26 +251,28 @@ export default function TodoList({ initialTodos, onTodosChange, showHabits }: To
         {/* Фильтры */}
         <div className="flex gap-2">
           <button
-            onClick={() => setHideCompleted(false)}
+            onClick={() => setIsHideCompleted(false)}
             className={`
               p-2 rounded-lg transition-colors
-              ${!hideCompleted 
+              ${!isHideCompleted 
                 ? 'bg-rose-400/20 text-rose-400' 
                 : 'bg-white/5 hover:bg-white/10'
               }
             `}
+            title="Показать все задачи"
           >
             <MdDoneAll className="w-5 h-5" />
           </button>
           <button
-            onClick={() => setHideCompleted(true)}
+            onClick={() => setIsHideCompleted(true)}
             className={`
               p-2 rounded-lg transition-colors
-              ${hideCompleted
+              ${isHideCompleted
                 ? 'bg-rose-400/20 text-rose-400'
                 : 'bg-white/5 hover:bg-white/10'
               }
             `}
+            title="Показать только невыполненные"
           >
             <MdPendingActions className="w-5 h-5" />
           </button>
