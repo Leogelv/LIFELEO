@@ -213,15 +213,13 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
         className={`
           relative overflow-hidden
           rounded-2xl backdrop-blur-xl
+          border border-white/10
           transition-all duration-300 ease-out
           hover:scale-[1.02] hover:shadow-lg
           cursor-pointer
           group
+          bg-white/5
         `}
-        style={{
-          background: `linear-gradient(to bottom right, ${config.colors.join(', ')})`,
-          border: '1px solid rgba(255, 255, 255, 0.1)'
-        }}
         onMouseDown={handleLongPress}
         onMouseUp={handlePressEnd}
         onMouseLeave={handlePressEnd}
@@ -233,19 +231,14 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <div className="absolute inset-0 bg-gradient-to-tl from-black/[0.05] to-transparent" />
 
-        {/* Фоновая анимация */}
-        <div className="absolute inset-0 z-0">
-          {'animation' in config && config.animation && <config.animation progress={progress} />}
-        </div>
-
         {/* Контент */}
         <div className="relative z-10 p-6 space-y-4">
           {/* Заголовок */}
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${config.text} bg-white/10`}>
-              <Icon icon={config.icon} className="w-6 h-6" />
+            <div className="p-2 rounded-xl bg-white/10 text-blue-400">
+              <Icon icon="mdi:check" className="w-6 h-6" />
             </div>
-            <h3 className={`text-xl font-medium ${config.text}`}>
+            <h3 className="text-xl font-medium text-white">
               {habit.name}
             </h3>
           </div>
@@ -253,19 +246,16 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
           {/* Прогресс */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className={`${config.text}`}>
-                Сегодня: {currentValue} / {habit.target_value} {config.unit}
+              <span className="text-white">
+                Сегодня: {currentValue} / {habit.target_value} {habit.category === 'water' ? 'мл' : 'мин'}
               </span>
-              <span className={`font-medium ${config.text}`}>
+              <span className="font-medium text-white">
                 {Math.round(progress)}%
               </span>
             </div>
             <div className="relative h-2 rounded-full bg-white/10">
               <motion.div
-                className="absolute inset-y-0 left-0 rounded-full"
-                style={{
-                  background: `linear-gradient(to right, ${config.colors.join(', ')})`
-                }}
+                className="absolute inset-y-0 left-0 rounded-full bg-blue-500"
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(100, progress)}%` }}
                 transition={{ duration: 0.5 }}
