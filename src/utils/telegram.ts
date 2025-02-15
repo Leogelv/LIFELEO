@@ -1,21 +1,9 @@
 // Типы для Telegram WebApp
-interface TelegramWebApp {
+export interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
   isExpanded: boolean;
-  disableClosingConfirmation: () => void;
   setBackgroundColor: (color: string) => void;
-  MainButton: {
-    hide: () => void;
-  };
-  BackButton: {
-    hide: () => void;
-  };
-  themeParams: {
-    bg_color: string;
-    secondary_bg_color: string;
-    text_color: string;
-  };
   initDataUnsafe?: {
     user?: {
       id?: number;
@@ -36,25 +24,13 @@ declare global {
   }
 }
 
-export function initTelegramApp() {
+export function initTelegramApp(): TelegramWebApp | null {
   if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     
     // Применяем настройки
     tg.expand(); // Разворачиваем на весь экран
-    
-    // Отключаем свайпы
-    tg.disableClosingConfirmation();
     tg.setBackgroundColor('#1a1a1a');
-    
-    // Настраиваем хедер
-    tg.MainButton.hide();
-    tg.BackButton.hide();
-    
-    // Устанавливаем цвета темы
-    tg.themeParams.bg_color = '#1a1a1a';
-    tg.themeParams.secondary_bg_color = '#2a2a2a';
-    tg.themeParams.text_color = '#ffffff';
     
     // В конце вызываем ready
     tg.ready();
