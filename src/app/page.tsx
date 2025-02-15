@@ -74,11 +74,23 @@ export default function Home() {
 
   // Инициализация Telegram WebApp
   useEffect(() => {
-    const tg = initTelegramApp()
-    const photoUrl = getUserPhotoUrl()
-    if (photoUrl) {
-      setUserPhoto(photoUrl)
+    const initApp = async () => {
+      const tg = initTelegramApp()
+      if (tg) {
+        // Получаем фотку после инициализации
+        const photoUrl = getUserPhotoUrl()
+        if (photoUrl) {
+          setUserPhoto(photoUrl)
+        }
+        
+        // Проверяем, что приложение развернуто
+        if (!tg.isExpanded) {
+          tg.expand()
+        }
+      }
     }
+    
+    initApp()
   }, [])
 
   // Загрузка статистики задач
