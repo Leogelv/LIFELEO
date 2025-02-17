@@ -75,23 +75,34 @@ export default function Home() {
   // Инициализация Telegram WebApp
   useEffect(() => {
     const initApp = async () => {
-      const tg = initTelegramApp()
-      if (tg) {
-        // Получаем фотку после инициализации
-        const photoUrl = getUserPhotoUrl()
-        if (photoUrl) {
-          setUserPhoto(photoUrl)
+      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+        const tg = window.Telegram.WebApp;
+        
+        // Сначала вызываем ready
+        tg.ready();
+        
+        // Затем расширяем окно
+        tg.expand();
+        
+        // Отключаем свайпы
+        if (tg.platform === 'ios' || tg.platform === 'android') {
+          tg.enableClosingConfirmation();
+          tg.setViewportHeight(window.innerHeight);
+          tg.onEvent('viewportChanged', () => {
+            tg.setViewportHeight(window.innerHeight);
+          });
         }
         
-        // Проверяем, что приложение развернуто
-        if (!tg.isExpanded) {
-          tg.expand()
+        // Получаем фотку после инициализации
+        const photoUrl = tg.initDataUnsafe?.user?.photo_url;
+        if (photoUrl) {
+          setUserPhoto(photoUrl);
         }
       }
-    }
+    };
     
-    initApp()
-  }, [])
+    initApp();
+  }, []);
 
   // Загрузка статистики задач
   const loadTaskStats = async () => {

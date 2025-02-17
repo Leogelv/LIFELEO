@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from 'sonner'
 import { NavigationLoader } from './components/ui/NavigationLoader'
 import LogViewer from './components/LogViewer'
+import Script from 'next/script'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -30,6 +31,10 @@ export default function RootLayout({
               NEXT_PUBLIC_YANDEX_API_KEY: process.env.NEXT_PUBLIC_YANDEX_API_KEY,
             })}`,
           }}
+        />
+        <Script 
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
         />
       </head>
       <body className={inter.className}>
