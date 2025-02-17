@@ -1,4 +1,4 @@
-interface TelegramWebAppUser {
+export interface TelegramWebAppUser {
   id?: number;
   first_name?: string;
   last_name?: string;
@@ -7,11 +7,11 @@ interface TelegramWebAppUser {
   language_code?: string;
 }
 
-interface TelegramWebAppInitData {
+export interface TelegramWebAppInitData {
   user?: TelegramWebAppUser;
 }
 
-interface TelegramWebApp {
+export interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
   isExpanded: boolean;
@@ -19,12 +19,12 @@ interface TelegramWebApp {
   initDataUnsafe?: TelegramWebAppInitData;
 }
 
-interface Telegram {
+export interface TelegramType {
   WebApp: TelegramWebApp;
 }
 
 declare global {
   interface Window {
-    Telegram?: Telegram;
+    Telegram: TelegramType;
   }
 } 

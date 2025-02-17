@@ -1,33 +1,4 @@
-// Типы для Telegram WebApp
-export interface TelegramWebAppUser {
-  id?: number;
-  first_name?: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  language_code?: string;
-}
-
-export interface TelegramWebAppInitData {
-  user?: TelegramWebAppUser;
-}
-
-export interface TelegramWebApp {
-  ready: () => void;
-  expand: () => void;
-  isExpanded: boolean;
-  setBackgroundColor: (color: string) => void;
-  initDataUnsafe?: TelegramWebAppInitData;
-}
-
-// Расширяем глобальный тип Window
-declare global {
-  // eslint-disable-next-line no-unused-vars
-  interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Telegram: any;
-  }
-}
+import type { TelegramWebApp } from '@/types/telegram'
 
 export function initTelegramApp(): TelegramWebApp | null {
   if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
