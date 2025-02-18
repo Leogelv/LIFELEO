@@ -84,15 +84,6 @@ export default function Home() {
         // Затем расширяем окно
         tg.expand();
         
-        // Отключаем свайпы
-        if (tg.platform === 'ios' || tg.platform === 'android') {
-          tg.enableClosingConfirmation();
-          tg.setViewportHeight(window.innerHeight);
-          tg.onEvent('viewportChanged', () => {
-            tg.setViewportHeight(window.innerHeight);
-          });
-        }
-        
         // Получаем фотку после инициализации
         const photoUrl = tg.initDataUnsafe?.user?.photo_url;
         if (photoUrl) {

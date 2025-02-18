@@ -18,11 +18,6 @@ declare global {
     isExpanded: boolean;
     setBackgroundColor: (color: string) => void;
     initDataUnsafe?: TelegramWebAppInitData;
-    platform: 'android' | 'ios' | 'web' | 'unknown';
-    enableClosingConfirmation: () => void;
-    disableClosingConfirmation: () => void;
-    setViewportHeight: (height: number) => void;
-    onEvent: (eventType: string, callback: () => void) => void;
     MainButton: {
       text: string;
       color: string;
