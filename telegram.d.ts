@@ -1,4 +1,4 @@
-export interface TelegramWebAppUser {
+interface TelegramWebAppUser {
   id?: number;
   first_name?: string;
   last_name?: string;
@@ -7,11 +7,11 @@ export interface TelegramWebAppUser {
   language_code?: string;
 }
 
-export interface TelegramWebAppInitData {
+interface TelegramWebAppInitData {
   user?: TelegramWebAppUser;
 }
 
-export interface TelegramWebApp {
+interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
   isExpanded: boolean;
@@ -48,7 +48,7 @@ export interface TelegramWebApp {
   };
 }
 
-export interface TelegramType {
+interface TelegramType {
   WebApp: TelegramWebApp;
 }
 
