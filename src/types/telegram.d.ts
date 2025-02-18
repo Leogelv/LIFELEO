@@ -17,7 +17,7 @@ export interface TelegramWebApp {
   isExpanded: boolean;
   setBackgroundColor: (color: string) => void;
   initDataUnsafe?: TelegramWebAppInitData;
-  platform: string;
+  platform: 'android' | 'ios' | 'web' | 'unknown';
   enableClosingConfirmation: () => void;
   disableClosingConfirmation: () => void;
   setViewportHeight: (height: number) => void;
