@@ -11,7 +11,6 @@ import { realtime } from '@/utils/realtime'
 import { habitsRealtime } from '@/utils/habits-realtime'
 import { initTelegramApp, getUserPhotoUrl } from '@/utils/telegram'
 import Image from 'next/image'
-import { TelegramWebApp } from '@/types/telegram'
 
 interface TaskStats {
   overdue: number
