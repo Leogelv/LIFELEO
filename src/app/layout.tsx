@@ -31,7 +31,6 @@ export default function RootLayout({
             })}`,
           }}
         />
-        <script src="https://telegram.org/js/telegram-web-app.js"></script>
       </head>
       <body className={inter.className}>
         <NavigationLoader />
