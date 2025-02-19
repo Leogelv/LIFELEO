@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ContactList } from '../components/ContactList'
-import { useTelegram } from '@/app/hooks/useTelegram'
+import { useTelegram } from '../hooks/useTelegram'
 
 export default function ContactsPage() {
   const { isExpanded } = useTelegram()

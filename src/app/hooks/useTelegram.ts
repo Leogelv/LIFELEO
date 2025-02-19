@@ -29,6 +29,7 @@ declare global {
 export function useTelegram() {
   const [userPhoto, setUserPhoto] = useState<string>('')
   const [userName, setUserName] = useState<string>('')
+  const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -36,6 +37,7 @@ export function useTelegram() {
       // Инициализация WebApp
       tg.ready()
       tg.expand()
+      setIsExpanded(true)
       tg.requestFullscreen()
       tg.isVerticalSwipesEnabled = false
       tg.disableVerticalSwipes()
@@ -53,6 +55,7 @@ export function useTelegram() {
   return {
     userPhoto,
     userName,
-    userId: 375634162 // Дефолтный ID для разработки
+    userId: 375634162, // Дефолтный ID для разработки
+    isExpanded
   }
 } 
