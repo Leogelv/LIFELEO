@@ -2,12 +2,12 @@ export function initTelegramApp(): TelegramWebApp | null {
   if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     
-    // Применяем настройки
-    tg.expand(); // Разворачиваем на весь экран
-    tg.setBackgroundColor('#1a1a1a');
-    
-    // В конце вызываем ready
+    // Сначала вызываем ready
     tg.ready();
+    
+    // Затем настраиваем
+    tg.expand();
+    tg.setBackgroundColor('#1a1a1a');
     
     return tg;
   }

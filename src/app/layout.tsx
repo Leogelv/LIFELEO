@@ -4,7 +4,6 @@ import './globals.css'
 import { Toaster } from 'sonner'
 import { NavigationLoader } from './components/ui/NavigationLoader'
 import LogViewer from './components/LogViewer'
-import Script from 'next/script'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -32,10 +31,7 @@ export default function RootLayout({
             })}`,
           }}
         />
-        <Script 
-          src="https://telegram.org/js/telegram-web-app.js"
-          strategy="beforeInteractive"
-        />
+        <script src="https://telegram.org/js/telegram-web-app.js"></script>
       </head>
       <body className={inter.className}>
         <NavigationLoader />
