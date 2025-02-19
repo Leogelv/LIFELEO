@@ -8,6 +8,7 @@ export interface TelegramWebApp {
   setBackgroundColor: (color: string) => void
   initDataUnsafe?: {
     user?: {
+      id?: number
       photo_url?: string
       username?: string
       first_name?: string
