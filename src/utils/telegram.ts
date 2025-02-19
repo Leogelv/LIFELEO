@@ -1,3 +1,5 @@
+import type { TelegramWebApp } from '@/types/telegram';
+
 export function initTelegramApp(): TelegramWebApp | null {
   if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
