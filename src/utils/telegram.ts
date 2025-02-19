@@ -11,6 +11,14 @@ export function initTelegramApp(): TelegramWebApp | null {
     tg.expand();
     tg.setBackgroundColor('#1a1a1a');
     
+    // Проверяем и инициализируем MainButton и BackButton
+    if (tg.MainButton) {
+      tg.MainButton.show();
+    }
+    if (tg.BackButton) {
+      tg.BackButton.show();
+    }
+    
     return tg;
   }
   return null;
