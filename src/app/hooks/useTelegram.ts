@@ -1,30 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { TelegramUser } from '../types/telegram-webapp'
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: {
-        ready: () => void
-        expand: () => void
-        requestFullscreen: () => void
-        isVerticalSwipesEnabled: boolean
-        disableVerticalSwipes: () => void
-        setHeaderColor: (color: string) => void
-        setBackgroundColor: (color: string) => void
-        initDataUnsafe?: {
-          user?: {
-            photo_url?: string
-            username?: string
-            first_name?: string
-          }
-        }
-      }
-    }
-  }
-}
+import type { TelegramWebApp } from '../types/telegram-webapp'
 
 export function useTelegram() {
   const [userPhoto, setUserPhoto] = useState<string>('')
@@ -32,22 +9,24 @@ export function useTelegram() {
   const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
-    const tg = window.Telegram?.WebApp
-    if (tg) {
+    const telegram = window.Telegram
+    const webApp = telegram?.WebApp
+
+    if (webApp) {
       // Инициализация WebApp
-      tg.ready()
-      tg.expand()
+      webApp.ready()
+      webApp.expand()
       setIsExpanded(true)
-      tg.requestFullscreen()
-      tg.isVerticalSwipesEnabled = false
-      tg.disableVerticalSwipes()
-      tg.setHeaderColor('#1a1a1a')
-      tg.setBackgroundColor('#1a1a1a')
+      webApp.requestFullscreen()
+      webApp.isVerticalSwipesEnabled = false
+      webApp.disableVerticalSwipes()
+      webApp.setHeaderColor('#1a1a1a')
+      webApp.setBackgroundColor('#1a1a1a')
 
       // Получаем данные пользователя
-      if (tg.initDataUnsafe?.user) {
-        setUserPhoto(tg.initDataUnsafe.user.photo_url || '')
-        setUserName(tg.initDataUnsafe.user.first_name || tg.initDataUnsafe.user.username || '')
+      if (webApp.initDataUnsafe?.user) {
+        setUserPhoto(webApp.initDataUnsafe.user.photo_url || '')
+        setUserName(webApp.initDataUnsafe.user.first_name || webApp.initDataUnsafe.user.username || '')
       }
     }
   }, [])
