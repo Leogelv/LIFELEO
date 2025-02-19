@@ -63,21 +63,25 @@ const menuItems = [
   }
 ]
 
+// Добавляем функцию applySettings для интеграции с Telegram WebApp
 function applySettings() {
-    if (window.Telegram?.WebApp) {
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-        tg.setHeaderColor('#F6F3FB');
-        tg.setBackgroundColor('#F6F3FB');
-        const userPhoto = tg.initDataUnsafe?.user?.photo_url;
-        if (userPhoto) {
-            const avatarElement = document.getElementById('user-avatar');
-            if (avatarElement instanceof HTMLImageElement) {
-                avatarElement.src = userPhoto;
-            }
-        }
+  if (window.Telegram?.WebApp) {
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    tg.setHeaderColor('#F6F3FB');
+    tg.setBackgroundColor('#F6F3FB');
+    const userPhotoUrl = tg.initDataUnsafe?.user?.photo_url;
+    // Логика для отображения аватарки
+    if (userPhotoUrl) {
+      // Добавляем аватарку в верхнюю часть страницы
+      const avatarElement = document.createElement('img');
+      avatarElement.src = userPhotoUrl;
+      avatarElement.alt = 'User Avatar';
+      avatarElement.className = 'absolute top-4 right-4 w-10 h-10 rounded-full';
+      document.body.appendChild(avatarElement);
     }
+  }
 }
 
 export default function Home() {
@@ -191,6 +195,7 @@ export default function Home() {
     }
   }, [userId])
 
+  // Вызов функции applySettings при загрузке компонента
   useEffect(() => {
     applySettings();
   }, []);
@@ -208,7 +213,7 @@ export default function Home() {
         {/* Основной градиент */}
         <div className="absolute inset-0 bg-gradient-to-br from-rose-100/20 via-violet-200/20 to-cyan-100/20 dark:from-rose-500/10 dark:via-violet-500/10 dark:to-cyan-500/10" />
         
-        {/* Анимированные круги */}
+        {/* Упрощенные анимированные круги */}
         <motion.div
           className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-purple-300/20 to-pink-300/20 dark:from-purple-500/10 dark:to-pink-500/10 blur-3xl"
           animate={{
@@ -248,27 +253,27 @@ export default function Home() {
               {menuItems.map((item, index) => (
                 <Link key={item.href} href={item.href}>
                   <motion.div
-                    initial={{ opacity: 0, y: 50 }}
+                    initial={{ opacity: 0, y: 30 }}
                     animate={{ 
                       opacity: 1, 
                       y: 0,
                       transition: { 
-                        delay: index * 0.2,
-                        duration: 0.5,
+                        delay: index * 0.1,
+                        duration: 0.4,
                         ease: [0.4, 0, 0.2, 1]
                       }
                     }}
                     whileHover={{ 
-                      y: -10,
+                      y: -5,
                       transition: { duration: 0.2 }
                     }}
                     whileTap={{ scale: 0.98 }}
                     className={`
-                      group h-full p-8 rounded-[2.5rem] bg-gradient-to-br ${item.gradient} ${item.darkGradient}
+                      group h-full p-6 rounded-[2rem] bg-gradient-to-br ${item.gradient} ${item.darkGradient}
                       backdrop-blur-xl border border-white/30 dark:border-white/10
                       hover:border-white/50 dark:hover:border-white/20
                       transition-all duration-500 relative overflow-hidden
-                      shadow-lg hover:shadow-2xl
+                      shadow-md hover:shadow-lg
                     `}
                   >
                     {/* Animated Glow Effect */}
@@ -281,7 +286,7 @@ export default function Home() {
 
                     {/* Floating Particles */}
                     <div className="absolute inset-0 overflow-hidden">
-                      {[...Array(5)].map((_, i) => (
+                      {[...Array(3)].map((_, i) => (
                         <motion.div
                           key={i}
                           className="absolute w-2 h-2 rounded-full"
@@ -291,14 +296,14 @@ export default function Home() {
                             top: `${Math.random() * 100}%`,
                           }}
                           animate={{
-                            y: [-20, 20, -20],
-                            x: [-20, 20, -20],
+                            y: [-10, 10, -10],
+                            x: [-10, 10, -10],
                             opacity: [0, 1, 0],
                           }}
                           transition={{
-                            duration: 3 + Math.random() * 2,
+                            duration: 2 + Math.random() * 1.5,
                             repeat: Infinity,
-                            delay: i * 0.2,
+                            delay: i * 0.1,
                           }}
                         />
                       ))}
@@ -308,7 +313,7 @@ export default function Home() {
                     <div className="relative z-10 h-full flex flex-col">
                       {/* Animated Icon */}
                       <motion.div 
-                        className="mb-6 relative w-16 h-16"
+                        className="mb-4 relative w-12 h-12"
                         whileHover="hover"
                       >
                         <motion.div
@@ -324,7 +329,7 @@ export default function Home() {
                         >
                           <Icon 
                             icon={item.icon} 
-                            className="w-16 h-16 text-white/90 drop-shadow-lg" 
+                            className="w-12 h-12 text-white/90 drop-shadow-lg" 
                           />
                         </motion.div>
                         
@@ -342,64 +347,64 @@ export default function Home() {
                         >
                           <Icon 
                             icon={item.iconSecondary} 
-                            className="w-16 h-16 text-white/90 drop-shadow-lg" 
+                            className="w-12 h-12 text-white/90 drop-shadow-lg" 
                           />
                         </motion.div>
                       </motion.div>
                       
                       <motion.h2 
-                        className="text-3xl font-extralight tracking-wide mb-3 text-white/90"
+                        className="text-2xl font-extralight tracking-wide mb-2 text-white/90"
                         whileHover={{
-                          letterSpacing: "0.2em",
+                          letterSpacing: "0.15em",
                           transition: { duration: 0.3 }
                         }}
                       >
                         {item.title}
                       </motion.h2>
                       
-                      <p className="text-base text-white/70 font-light leading-relaxed mb-6">
+                      <p className="text-sm text-white/70 font-light leading-relaxed mb-4">
                         {item.description}
                       </p>
 
                       {/* Stats Section */}
                       <div className="mt-auto">
                         {item.href === '/tasks' && (
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <Icon icon="ph:clock-countdown-duotone" className="w-5 h-5 text-white/60" />
-                              <span className="text-sm text-white/60">{taskStats.overdue} просрочено</span>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                              <Icon icon="ph:clock-countdown-duotone" className="w-4 h-4 text-white/60" />
+                              <span className="text-xs text-white/60">{taskStats.overdue} просрочено</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Icon icon="ph:check-circle-duotone" className="w-5 h-5 text-white/60" />
-                              <span className="text-sm text-white/60">{taskStats.completed}/{taskStats.total}</span>
+                            <div className="flex items-center gap-1">
+                              <Icon icon="ph:check-circle-duotone" className="w-4 h-4 text-white/60" />
+                              <span className="text-xs text-white/60">{taskStats.completed}/{taskStats.total}</span>
                             </div>
                           </div>
                         )}
 
                         {item.href === '/habits' && (
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <Icon icon="ph:chart-line-up-duotone" className="w-5 h-5 text-white/60" />
-                              <span className="text-sm text-white/60">{habitStats.completedToday}/{habitStats.totalHabits} сегодня</span>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                              <Icon icon="ph:chart-line-up-duotone" className="w-4 h-4 text-white/60" />
+                              <span className="text-xs text-white/60">{habitStats.completedToday}/{habitStats.totalHabits} сегодня</span>
                             </div>
                             {habitStats.streak > 0 && (
-                              <div className="flex items-center gap-2">
-                                <Icon icon="ph:flame-duotone" className="w-5 h-5 text-white/60" />
-                                <span className="text-sm text-white/60">{habitStats.streak}д серия</span>
+                              <div className="flex items-center gap-1">
+                                <Icon icon="ph:flame-duotone" className="w-4 h-4 text-white/60" />
+                                <span className="text-xs text-white/60">{habitStats.streak}д серия</span>
                               </div>
                             )}
                           </div>
                         )}
 
                         {item.href === '/contacts' && (
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <Icon icon="ph:users-three-duotone" className="w-5 h-5 text-white/60" />
-                              <span className="text-sm text-white/60">{contactStats.totalContacts} контактов</span>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                              <Icon icon="ph:users-three-duotone" className="w-4 h-4 text-white/60" />
+                              <span className="text-xs text-white/60">{contactStats.totalContacts} контактов</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Icon icon="ph:chat-circle-dots-duotone" className="w-5 h-5 text-white/60" />
-                              <span className="text-sm text-white/60">{contactStats.activeChats} активных</span>
+                            <div className="flex items-center gap-1">
+                              <Icon icon="ph:chat-circle-dots-duotone" className="w-4 h-4 text-white/60" />
+                              <span className="text-xs text-white/60">{contactStats.activeChats} активных</span>
                             </div>
                           </div>
                         )}
@@ -407,13 +412,13 @@ export default function Home() {
 
                       {/* Hover Arrow */}
                       <motion.div
-                        className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                        initial={{ x: -10 }}
+                        className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        initial={{ x: -8 }}
                         whileHover={{ x: 0 }}
                       >
                         <Icon 
                           icon="game-icons:arrow-dunk" 
-                          className="w-8 h-8 text-white/70" 
+                          className="w-6 h-6 text-white/70" 
                         />
                       </motion.div>
                     </div>
@@ -422,12 +427,15 @@ export default function Home() {
               ))}
             </AnimatePresence>
           </div>
-        </div>
-      </div>
 
-      {/* User Avatar */}
-      <div className="absolute top-4 right-4">
-        <img id="user-avatar" className="w-10 h-10 rounded-full" alt="User Avatar" />
+          {/* Нижнее меню с голосовым режимом и айфреймом */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-lg p-4 flex justify-center">
+            <Link href="/voice-mode" className="px-4 py-2 bg-rose-500/20 rounded-lg text-white/80">
+              Голосовой режим
+            </Link>
+            <iframe src="https://kpcaller2.vercel.app" className="w-full h-64 mt-4" allow="fullscreen" />
+          </div>
+        </div>
       </div>
     </motion.div>
   )
