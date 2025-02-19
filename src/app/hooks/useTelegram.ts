@@ -3,72 +3,56 @@
 import { useEffect, useState } from 'react'
 import type { TelegramUser } from '../types/telegram-webapp'
 
-export const useTelegram = () => {
-  const [isReady, setIsReady] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [userData, setUserData] = useState<TelegramUser | null>(null)
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: {
+        ready: () => void
+        expand: () => void
+        requestFullscreen: () => void
+        isVerticalSwipesEnabled: boolean
+        disableVerticalSwipes: () => void
+        setHeaderColor: (color: string) => void
+        setBackgroundColor: (color: string) => void
+        initDataUnsafe?: {
+          user?: {
+            photo_url?: string
+            username?: string
+            first_name?: string
+          }
+        }
+      }
+    }
+  }
+}
 
-  // Проверяем, запущены ли мы в локалхосте
-  const isLocalhost = typeof window !== 'undefined' && (
-    window.location.hostname === 'localhost' || 
-    window.location.hostname === '127.0.0.1'
-  )
-
-  // Проверяем, есть ли объект window.Telegram?.WebApp и не локалхост ли это
-  const isTelegram = !isLocalhost && typeof window !== 'undefined' && window.Telegram?.WebApp
-
-  // Если мы в тестовой среде или локалхосте, используем тестовый ID
-  const userId = isTelegram ? window.Telegram?.WebApp?.initDataUnsafe?.user?.id : 375634162
+export function useTelegram() {
+  const [userPhoto, setUserPhoto] = useState<string>('')
+  const [userName, setUserName] = useState<string>('')
 
   useEffect(() => {
-    if (!isTelegram) {
-      setIsReady(true)
-      return
-    }
-
-    const tg = window.Telegram!.WebApp
-
-    // Инициализация только если мы в Telegram
-    const onReady = () => {
-      setIsReady(true)
-      setUserData(tg.initDataUnsafe?.user || null)
-    }
-
-    const onExpand = () => {
-      setIsExpanded(true)
-    }
-
-    try {
+    const tg = window.Telegram?.WebApp
+    if (tg) {
+      // Инициализация WebApp
       tg.ready()
       tg.expand()
-      
-      // Безопасный вызов requestFullscreen только если метод существует
-      if (typeof tg.requestFullscreen === 'function') {
-        tg.requestFullscreen()
-      }
-      
-      // Устанавливаем цвет хедера и отключаем свайпы только в телеграме
-      tg.setHeaderColor('#1A1A1A')
-      tg.isVerticalSwipesEnabled = true
+      tg.requestFullscreen()
+      tg.isVerticalSwipesEnabled = false
       tg.disableVerticalSwipes()
+      tg.setHeaderColor('#1a1a1a')
+      tg.setBackgroundColor('#1a1a1a')
 
-      onReady()
-      onExpand()
-    } catch (error) {
-      console.error('Error initializing Telegram WebApp:', error)
-      setIsReady(true)
+      // Получаем данные пользователя
+      if (tg.initDataUnsafe?.user) {
+        setUserPhoto(tg.initDataUnsafe.user.photo_url || '')
+        setUserName(tg.initDataUnsafe.user.first_name || tg.initDataUnsafe.user.username || '')
+      }
     }
-
-    return () => {
-      // Очистка, если нужна
-    }
-  }, [isTelegram])
+  }, [])
 
   return {
-    isReady,
-    isExpanded,
-    userId,
-    userData,
-    isTelegram
+    userPhoto,
+    userName,
+    userId: 375634162 // Дефолтный ID для разработки
   }
 } 
