@@ -11,6 +11,7 @@ import { format, subDays } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { categoryConfig, type HabitCategory } from './config/categoryConfig'
 import { MeditationGuide } from './MeditationGuide'
+import { SafeArea } from '@/app/components/SafeArea'
 
 interface HabitStats {
   total_value: number
@@ -355,64 +356,58 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
             onClick={() => setShowStats(false)}
           >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-zinc-900 p-6 rounded-xl max-w-sm w-full"
-              onClick={e => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-medium mb-4">Статистика</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm opacity-60 mb-1">За последние 30 дней</p>
-                  <p className="text-xl font-medium">
-                    {stats.total_value} {config.unit}
-                  </p>
-                </div>
+            <SafeArea className="w-full max-w-lg">
+              <motion.div
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.9 }}
+                className="bg-zinc-900/90 backdrop-blur-xl rounded-2xl p-6 mx-4"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xl font-medium">Статистика</h3>
+                    <button
+                      onClick={() => setShowStats(false)}
+                      className="p-2 rounded-lg hover:bg-white/10"
+                    >
+                      <Icon icon="solar:close-circle-bold" className="w-6 h-6 text-white/60" />
+                    </button>
+                  </div>
 
-                <div>
-                  <p className="text-sm opacity-60 mb-1">Выполнение за 7 дней</p>
-                  <p className="text-xl font-medium">{Math.round(stats.completion_rate * 100)}%</p>
-                </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm opacity-60 mb-1">Всего за 30 дней</p>
+                      <p className="text-xl font-medium">
+                        {Math.round(stats.total_value)} {config.unit}
+                      </p>
+                    </div>
 
-                <div>
-                  <p className="text-sm opacity-60 mb-1">Текущая серия</p>
-                  <p className="text-xl font-medium">{stats.current_streak} дней</p>
-                </div>
+                    <div>
+                      <p className="text-sm opacity-60 mb-1">Выполнение цели</p>
+                      <p className="text-xl font-medium">
+                        {Math.round(stats.completion_rate * 100)}%
+                      </p>
+                    </div>
 
-                <div>
-                  <p className="text-sm opacity-60 mb-1">В среднем в день</p>
-                  <p className="text-xl font-medium">
-                    {Math.round(stats.average_value)} {config.unit}
-                  </p>
-                </div>
+                    <div>
+                      <p className="text-sm opacity-60 mb-1">Текущая серия</p>
+                      <p className="text-xl font-medium">{stats.current_streak} дней</p>
+                    </div>
 
-                <div>
-                  <p className="text-sm opacity-60 mb-2">График за неделю</p>
-                  <div className="h-32 flex items-end gap-1">
-                    {dailyValues.map(({ date, value }) => (
-                      <div
-                        key={date}
-                        className="flex-1 bg-zinc-800 rounded-t-sm relative group"
-                        style={{ 
-                          height: `${Math.min(100, (value / habit.target_value) * 100)}%`,
-                          minHeight: '4px'
-                        }}
-                      >
-                        <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-zinc-800 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                          {format(new Date(date), 'd MMM', { locale: ru })}: {value}
-                        </div>
-                      </div>
-                    ))}
+                    <div>
+                      <p className="text-sm opacity-60 mb-1">В среднем в день</p>
+                      <p className="text-xl font-medium">
+                        {Math.round(stats.average_value)} {config.unit}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </SafeArea>
           </motion.div>
         )}
       </AnimatePresence>
@@ -424,21 +419,23 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
             onClick={() => setShowMeditationGuide(false)}
           >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="w-full max-w-2xl"
-              onClick={e => e.stopPropagation()}
-            >
-              <MeditationGuide 
-                habit={habit} 
-                onClose={() => setShowMeditationGuide(false)} 
-              />
-            </motion.div>
+            <SafeArea className="w-full max-w-2xl">
+              <motion.div
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.9 }}
+                className="mx-4"
+                onClick={e => e.stopPropagation()}
+              >
+                <MeditationGuide 
+                  habit={habit} 
+                  onClose={() => setShowMeditationGuide(false)} 
+                />
+              </motion.div>
+            </SafeArea>
           </motion.div>
         )}
       </AnimatePresence>

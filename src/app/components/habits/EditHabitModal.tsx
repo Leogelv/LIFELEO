@@ -12,6 +12,7 @@ import { ru } from 'date-fns/locale'
 import { habitsRealtime } from '@/utils/habits-realtime'
 import { logger } from '@/utils/logger'
 import { categoryConfig, type HabitCategory } from './config/categoryConfig'
+import { SafeArea } from '@/app/components/SafeArea'
 
 // Дефолтные значения для кнопок по категориям
 const defaultButtons = {
@@ -271,192 +272,194 @@ export function EditHabitModal({ habit, onClose, onSave }: EditHabitModalProps) 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="w-full max-w-lg p-6 bg-zinc-900 rounded-2xl shadow-xl space-y-6"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Заголовок */}
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-medium text-white">Редактировать привычку</h3>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10">
-            <MdClose className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Название */}
-        <div className="space-y-2">
-          <label className="text-sm text-white/60">Название</label>
-          <input
-            type="text"
-            value={editedHabit.name}
-            onChange={e => setEditedHabit({ ...editedHabit, name: e.target.value })}
-            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg 
-              text-white focus:outline-none focus:border-white/20"
-          />
-        </div>
-
-        {/* Целевое значение */}
-        <div className="space-y-2">
-          <label className="text-sm text-white/60">
-            Целевое значение ({config.unit})
-          </label>
-          <input
-            type="number"
-            value={editedHabit.target_value}
-            onChange={e => setEditedHabit({ ...editedHabit, target_value: Number(e.target.value) })}
-            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg 
-              text-white focus:outline-none focus:border-white/20"
-          />
-        </div>
-
-        {/* Быстрые кнопки */}
-        <div className="space-y-2">
-          <label className="text-sm text-white/60">Быстрые действия</label>
-          <div className="flex flex-wrap gap-2">
-            {buttons.map((btn, index) => (
-              <button
-                key={index}
-                className={`
-                  px-4 py-2 rounded-xl bg-white/10 
-                  text-${config.text} hover:bg-white/20 
-                  transition-colors
-                `}
-              >
-                {btn.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Статистика с графиком */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h4 className="text-lg font-medium">Статистика</h4>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setStatsView('week')}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
-                  statsView === 'week' ? 'bg-white/20' : 'bg-white/5'
-                }`}
-              >
-                Неделя
-              </button>
-              <button
-                onClick={() => setStatsView('month')}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
-                  statsView === 'month' ? 'bg-white/20' : 'bg-white/5'
-                }`}
-              >
-                Месяц
-              </button>
-            </div>
-          </div>
-
-          {/* Основные показатели */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="p-4 rounded-xl bg-white/5">
-              <div className="text-sm opacity-60 mb-1">
-                {statsView === 'week' ? 'За неделю' : 'За месяц'}
-              </div>
-              <div className="text-2xl font-medium">
-                {statsView === 'week' 
-                  ? stats?.weeklyTotal || 0 
-                  : stats?.monthlyTotal || 0} {config.unit}
-              </div>
-            </div>
-            <div className="p-4 rounded-xl bg-white/5">
-              <div className="text-sm opacity-60 mb-1">В среднем в день</div>
-              <div className="text-2xl font-medium">
-                {Math.round(statsView === 'week' 
-                  ? (stats?.weeklyAverage || 0)
-                  : (stats?.monthlyAverage || 0))} {config.unit}
-              </div>
-            </div>
-          </div>
-
-          {/* График */}
-          <div className="bg-white/5 rounded-xl p-4">
-            <div className="h-48 relative flex items-end gap-1">
-              {(statsView === 'week' ? dailyValues.slice(-7) : dailyValues).map((day, i) => (
-                <div
-                  key={day.date}
-                  className="flex-1 flex flex-col justify-end h-full group"
-                >
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ 
-                      height: `${Math.min(100, (day.value / habit.target_value) * 100)}%`
-                    }}
-                    className={`w-full bg-gradient-to-t ${config.gradient} rounded-t-lg min-h-[4px]`}
-                    transition={{ duration: 0.5 }}
-                  />
-                  <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-2 py-1 
-                    bg-zinc-800 rounded text-xs opacity-0 group-hover:opacity-100 
-                    transition-opacity whitespace-nowrap z-10"
-                  >
-                    {format(new Date(day.date), 'd MMM', { locale: ru })}: {day.value} {config.unit}
-                  </div>
-                  <div className="text-xs text-white/40 text-center mt-2">
-                    {format(new Date(day.date), 'dd.MM')}
-                  </div>
-                </div>
-              ))}
-
-              {/* Целевая линия */}
-              <div className="absolute inset-x-0 border-t border-white/20 border-dashed"
-                style={{ bottom: '100%' }}
-              >
-                <div className="absolute right-0 top-0 transform translate-y-[-50%] px-2 py-0.5 
-                  bg-zinc-800 rounded text-xs whitespace-nowrap"
-                >
-                  Цель: {habit.target_value} {config.unit}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Текущая серия */}
-          <div className="p-4 rounded-xl bg-white/5 mt-4">
-            <div className="text-sm opacity-60 mb-1">Текущая серия</div>
-            <div className="text-2xl font-medium">
-              {stats?.streak || 0} {stats?.streak === 1 ? 'день' : 'дней'}
-            </div>
-          </div>
-        </div>
-
-        {/* Кнопки действий */}
-        <div className="flex gap-3 pt-4">
-          <button
-            onClick={handleDeleteProgress}
-            className="flex-1 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 
-              text-red-400 transition-colors"
-          >
-            Сбросить прогресс
-          </button>
-          <button
-            onClick={handleResetToday}
-            className="flex-1 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 
-              text-white transition-colors"
-          >
-            Сбросить сегодня
-          </button>
-        </div>
-
-        {/* Кнопка сохранения */}
-        <button
-          onClick={handleSave}
-          className="w-full px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 
-            text-white font-medium transition-colors"
+      <SafeArea className="w-full max-w-lg">
+        <motion.div
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0.9 }}
+          className="bg-zinc-900/90 backdrop-blur-xl rounded-2xl p-6 mx-4"
+          onClick={e => e.stopPropagation()}
         >
-          Сохранить
-        </button>
-      </motion.div>
+          {/* Заголовок */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-medium text-white">Редактировать привычку</h3>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10">
+              <MdClose className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Название */}
+          <div className="space-y-2">
+            <label className="text-sm text-white/60">Название</label>
+            <input
+              type="text"
+              value={editedHabit.name}
+              onChange={e => setEditedHabit({ ...editedHabit, name: e.target.value })}
+              className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg 
+                text-white focus:outline-none focus:border-white/20"
+            />
+          </div>
+
+          {/* Целевое значение */}
+          <div className="space-y-2">
+            <label className="text-sm text-white/60">
+              Целевое значение ({config.unit})
+            </label>
+            <input
+              type="number"
+              value={editedHabit.target_value}
+              onChange={e => setEditedHabit({ ...editedHabit, target_value: Number(e.target.value) })}
+              className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg 
+                text-white focus:outline-none focus:border-white/20"
+            />
+          </div>
+
+          {/* Быстрые кнопки */}
+          <div className="space-y-2">
+            <label className="text-sm text-white/60">Быстрые действия</label>
+            <div className="flex flex-wrap gap-2">
+              {buttons.map((btn, index) => (
+                <button
+                  key={index}
+                  className={`
+                    px-4 py-2 rounded-xl bg-white/10 
+                    text-${config.text} hover:bg-white/20 
+                    transition-colors
+                  `}
+                >
+                  {btn.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Статистика с графиком */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h4 className="text-lg font-medium">Статистика</h4>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setStatsView('week')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    statsView === 'week' ? 'bg-white/20' : 'bg-white/5'
+                  }`}
+                >
+                  Неделя
+                </button>
+                <button
+                  onClick={() => setStatsView('month')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    statsView === 'month' ? 'bg-white/20' : 'bg-white/5'
+                  }`}
+                >
+                  Месяц
+                </button>
+              </div>
+            </div>
+
+            {/* Основные показатели */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="p-4 rounded-xl bg-white/5">
+                <div className="text-sm opacity-60 mb-1">
+                  {statsView === 'week' ? 'За неделю' : 'За месяц'}
+                </div>
+                <div className="text-2xl font-medium">
+                  {statsView === 'week' 
+                    ? stats?.weeklyTotal || 0 
+                    : stats?.monthlyTotal || 0} {config.unit}
+                </div>
+              </div>
+              <div className="p-4 rounded-xl bg-white/5">
+                <div className="text-sm opacity-60 mb-1">В среднем в день</div>
+                <div className="text-2xl font-medium">
+                  {Math.round(statsView === 'week' 
+                    ? (stats?.weeklyAverage || 0)
+                    : (stats?.monthlyAverage || 0))} {config.unit}
+                </div>
+              </div>
+            </div>
+
+            {/* График */}
+            <div className="bg-white/5 rounded-xl p-4">
+              <div className="h-48 relative flex items-end gap-1">
+                {(statsView === 'week' ? dailyValues.slice(-7) : dailyValues).map((day, i) => (
+                  <div
+                    key={day.date}
+                    className="flex-1 flex flex-col justify-end h-full group"
+                  >
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ 
+                        height: `${Math.min(100, (day.value / habit.target_value) * 100)}%`
+                      }}
+                      className={`w-full bg-gradient-to-t ${config.gradient} rounded-t-lg min-h-[4px]`}
+                      transition={{ duration: 0.5 }}
+                    />
+                    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-2 py-1 
+                      bg-zinc-800 rounded text-xs opacity-0 group-hover:opacity-100 
+                      transition-opacity whitespace-nowrap z-10"
+                    >
+                      {format(new Date(day.date), 'd MMM', { locale: ru })}: {day.value} {config.unit}
+                    </div>
+                    <div className="text-xs text-white/40 text-center mt-2">
+                      {format(new Date(day.date), 'dd.MM')}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Целевая линия */}
+                <div className="absolute inset-x-0 border-t border-white/20 border-dashed"
+                  style={{ bottom: '100%' }}
+                >
+                  <div className="absolute right-0 top-0 transform translate-y-[-50%] px-2 py-0.5 
+                    bg-zinc-800 rounded text-xs whitespace-nowrap"
+                  >
+                    Цель: {habit.target_value} {config.unit}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Текущая серия */}
+            <div className="p-4 rounded-xl bg-white/5 mt-4">
+              <div className="text-sm opacity-60 mb-1">Текущая серия</div>
+              <div className="text-2xl font-medium">
+                {stats?.streak || 0} {stats?.streak === 1 ? 'день' : 'дней'}
+              </div>
+            </div>
+          </div>
+
+          {/* Кнопки действий */}
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={handleDeleteProgress}
+              className="flex-1 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 
+                text-red-400 transition-colors"
+            >
+              Сбросить прогресс
+            </button>
+            <button
+              onClick={handleResetToday}
+              className="flex-1 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 
+                text-white transition-colors"
+            >
+              Сбросить сегодня
+            </button>
+          </div>
+
+          {/* Кнопка сохранения */}
+          <button
+            onClick={handleSave}
+            className="w-full px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 
+              text-white font-medium transition-colors"
+          >
+            Сохранить
+          </button>
+        </motion.div>
+      </SafeArea>
     </motion.div>
   )
 } 
