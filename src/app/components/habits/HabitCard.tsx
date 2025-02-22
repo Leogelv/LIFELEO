@@ -434,7 +434,10 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
               className="w-full max-w-2xl"
               onClick={e => e.stopPropagation()}
             >
-              <MeditationGuide habit={habit} />
+              <MeditationGuide 
+                habit={habit} 
+                onClose={() => setShowMeditationGuide(false)} 
+              />
             </motion.div>
           </motion.div>
         )}
