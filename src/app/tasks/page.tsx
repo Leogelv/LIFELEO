@@ -17,6 +17,7 @@ import { useTelegram } from '@/app/hooks/useTelegram'
 import { logger } from '@/utils/logger'
 import { Icon } from '@/app/components/Icon'
 import { Todo } from '@/types/todo'
+import { SafeArea } from '../components/SafeArea'
 
 export default function TasksPage() {
   const { isExpanded, userId } = useTelegram()
@@ -124,204 +125,195 @@ export default function TasksPage() {
   }, [hideCompleted, listView])
 
   return (
-    <UserIdProvider value={currentUserId}>
+    <SafeArea className="min-h-screen relative overflow-hidden">
+      {/* Animated gradient background */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className={`min-h-screen relative overflow-hidden ${isExpanded ? 'pt-[100px]' : ''}`}
-      >
-        {/* Animated gradient background */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-gradient-to-br from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] animate-gradient-slow" 
-        />
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-gradient-to-tr from-rose-500/5 via-transparent to-pink-500/5 animate-gradient-slow-reverse" 
-        />
+        className="fixed inset-0 bg-gradient-to-br from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] animate-gradient-slow" 
+      />
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="fixed inset-0 bg-gradient-to-tr from-rose-500/5 via-transparent to-pink-500/5 animate-gradient-slow-reverse" 
+      />
 
-        {/* Content */}
-        <div className="relative z-10">
-          {/* Header */}
-          <motion.div 
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
-          >
-            <div className="flex items-center justify-between">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link 
-                  href="/"
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl 
-                    bg-white/5 hover:bg-white/10 transition-colors"
-                >
-                  <MdArrowBack className="w-6 h-6" />
-                  <span>Назад</span>
-                </Link>
-              </motion.div>
-              <motion.div 
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                className="text-center"
+      {/* Content */}
+      <div className="relative z-10">
+        {/* Header */}
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
+        >
+          <div className="flex items-center justify-between">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link 
+                href="/"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl 
+                  bg-white/5 hover:bg-white/10 transition-colors"
               >
-                <h1 className="text-xl font-bold bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent">
-                  Задачи
-                </h1>
-              </motion.div>
-              <div className="w-[88px]" />
+                <MdArrowBack className="w-6 h-6" />
+                <span>Назад</span>
+              </Link>
+            </motion.div>
+            <motion.div 
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              className="text-center"
+            >
+              <h1 className="text-xl font-bold bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent">
+                Задачи
+              </h1>
+            </motion.div>
+            <div className="w-[88px]" />
+          </div>
+        </motion.div>
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          {/* Add Task Form */}
+          <motion.form 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            onSubmit={handleAddTask} 
+            className="relative space-y-3"
+          >
+            <div className="relative group">
+              <motion.input
+                whileFocus={{ scale: 1.01 }}
+                type="text"
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                placeholder="Добавить новую задачу..."
+                disabled={isSubmitting}
+                className="w-full px-6 py-4 bg-white/5 backdrop-blur-lg border border-white/10 
+                  rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-400/50
+                  text-base text-white placeholder-white/40 transition-all duration-300
+                  disabled:opacity-50 disabled:cursor-not-allowed"
+              />
             </div>
+
+            {newTask.trim() && (
+              <>
+                {/* Заметка */}
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Добавить заметку..."
+                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-lg border border-white/10 
+                    rounded-xl text-base text-white transition-all duration-300
+                    hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-rose-400/50
+                    min-h-[100px] resize-none"
+                />
+
+                {/* Дата и время */}
+                <div className="flex gap-2">
+                  <input
+                    type="datetime-local"
+                    value={format(deadline, "yyyy-MM-dd'T'HH:mm")}
+                    onChange={(e) => setDeadline(new Date(e.target.value))}
+                    className="flex-1 px-4 py-3 bg-white/5 backdrop-blur-lg border border-white/10 
+                      rounded-2xl text-base text-white transition-all duration-300
+                      hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-rose-400/50"
+                    min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full px-8 py-3 bg-gradient-to-r from-rose-400 to-pink-400 rounded-2xl
+                      text-base text-white font-medium transition-all duration-300
+                      hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed
+                      disabled:hover:scale-100"
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Добавляем...</span>
+                      </div>
+                    ) : (
+                      'Добавить'
+                    )}
+                  </motion.button>
+                </div>
+              </>
+            )}
+          </motion.form>
+
+          {/* Todo List */}
+          <TodoList
+            initialTodos={todos}
+            onTodosChange={setTodos}
+            listView={listView}
+            hideCompleted={hideCompleted}
+          />
+
+          {/* Кнопка показа календаря */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex justify-center mt-8"
+          >
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowCalendar(!showCalendar)}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 
+                border border-white/10 hover:border-rose-400/30 transition-all duration-300"
+            >
+              <Icon icon={showCalendar ? "solar:calendar-minimalistic-bold" : "solar:calendar-add-bold"} className="w-5 h-5" />
+              <span>{showCalendar ? 'Скрыть календарь' : 'Показать календарь'}</span>
+            </motion.button>
           </motion.div>
 
-        
-
-          {/* Main Content */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-            {/* Add Task Form */}
-            <motion.form 
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              onSubmit={handleAddTask} 
-              className="relative space-y-3"
-            >
-              <div className="relative group">
-                <motion.input
-                  whileFocus={{ scale: 1.01 }}
-                  type="text"
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  placeholder="Добавить новую задачу..."
-                  disabled={isSubmitting}
-                  className="w-full px-6 py-4 bg-white/5 backdrop-blur-lg border border-white/10 
-                    rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-400/50
-                    text-base text-white placeholder-white/40 transition-all duration-300
-                    disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              {newTask.trim() && (
-                <>
-                  {/* Заметка */}
-                  <textarea
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Добавить заметку..."
-                    className="w-full px-4 py-3 bg-white/5 backdrop-blur-lg border border-white/10 
-                      rounded-xl text-base text-white transition-all duration-300
-                      hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-rose-400/50
-                      min-h-[100px] resize-none"
-                  />
-
-                  {/* Дата и время */}
-                  <div className="flex gap-2">
-                    <input
-                      type="datetime-local"
-                      value={format(deadline, "yyyy-MM-dd'T'HH:mm")}
-                      onChange={(e) => setDeadline(new Date(e.target.value))}
-                      className="flex-1 px-4 py-3 bg-white/5 backdrop-blur-lg border border-white/10 
-                        rounded-2xl text-base text-white transition-all duration-300
-                        hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-rose-400/50"
-                      min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full px-8 py-3 bg-gradient-to-r from-rose-400 to-pink-400 rounded-2xl
-                        text-base text-white font-medium transition-all duration-300
-                        hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed
-                        disabled:hover:scale-100"
-                    >
-                      {isSubmitting ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>Добавляем...</span>
-                        </div>
-                      ) : (
-                        'Добавить'
-                      )}
-                    </motion.button>
-                  </div>
-                </>
-              )}
-            </motion.form>
-
-            {/* Todo List */}
-            <TodoList
-              initialTodos={todos}
-              onTodosChange={setTodos}
-              listView={listView}
-              hideCompleted={hideCompleted}
-            />
-
-            {/* Кнопка показа календаря */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-center mt-8"
-            >
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setShowCalendar(!showCalendar)}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 
-                  border border-white/10 hover:border-rose-400/30 transition-all duration-300"
+          {/* Календарь */}
+          <AnimatePresence>
+            {showCalendar && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-8 overflow-hidden"
               >
-                <Icon icon={showCalendar ? "solar:calendar-minimalistic-bold" : "solar:calendar-add-bold"} className="w-5 h-5" />
-                <span>{showCalendar ? 'Скрыть календарь' : 'Показать календарь'}</span>
-              </motion.button>
-            </motion.div>
+                <UniversalCalendarGrid 
+                  currentDate={new Date()}
+                  todos={todos}
+                  mode="tasks"
+                  view={calendarView}
+                  onViewChange={setCalendarView}
+                  onTaskMove={async (taskId: string, newDate: Date) => {
+                    const { error } = await supabase
+                      .from('todos')
+                      .update({ deadline: newDate.toISOString() })
+                      .eq('id', taskId)
+                      .eq('telegram_id', userId)
 
-            {/* Календарь */}
-            <AnimatePresence>
-              {showCalendar && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mt-8 overflow-hidden"
-                >
-                  <UniversalCalendarGrid 
-                    currentDate={new Date()}
-                    todos={todos}
-                    mode="tasks"
-                    view={calendarView}
-                    onViewChange={setCalendarView}
-                    onTaskMove={async (taskId: string, newDate: Date) => {
-                      const { error } = await supabase
-                        .from('todos')
-                        .update({ deadline: newDate.toISOString() })
-                        .eq('id', taskId)
-                        .eq('telegram_id', userId)
+                    if (error) {
+                      toast.error('Не удалось обновить дедлайн')
+                      return
+                    }
 
-                      if (error) {
-                        toast.error('Не удалось обновить дедлайн')
-                        return
-                      }
-
-                      setTodos(current => 
-                        current.map(todo => 
-                          todo.id === taskId 
-                            ? { ...todo, deadline: newDate.toISOString() } 
-                            : todo
-                        )
+                    setTodos(current => 
+                      current.map(todo => 
+                        todo.id === taskId 
+                          ? { ...todo, deadline: newDate.toISOString() } 
+                          : todo
                       )
-                      toast.success('Дедлайн обновлен')
-                    }}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                    )
+                    toast.success('Дедлайн обновлен')
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </motion.div>
-    </UserIdProvider>
+      </div>
+    </SafeArea>
   )
 } 

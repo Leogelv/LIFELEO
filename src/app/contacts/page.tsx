@@ -2,15 +2,13 @@
 
 import Link from 'next/link'
 import { ContactList } from '../components/ContactList'
-import { useTelegram } from '../hooks/useTelegram'
+import { SafeArea } from '../components/SafeArea'
 
 export default function ContactsPage() {
-  const { isExpanded } = useTelegram()
-
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white p-4 md:p-8 ${isExpanded ? 'pt-[100px]' : ''}`}>
+    <SafeArea className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-8 p-4">
           <Link 
             href="/"
             className="flex items-center gap-2 px-4 py-2 rounded-lg 
@@ -26,6 +24,6 @@ export default function ContactsPage() {
         </div>
         <ContactList />
       </div>
-    </div>
+    </SafeArea>
   )
 } 
