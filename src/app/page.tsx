@@ -9,6 +9,7 @@ import { Icon } from '@iconify/react'
 import { supabase } from '@/utils/supabase/client'
 import { realtime } from '@/utils/realtime'
 import { habitsRealtime } from '@/utils/habits-realtime'
+import { SafeArea } from './components/SafeArea'
 
 interface TaskStats {
   overdue: number
@@ -56,7 +57,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('home')
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
+    <SafeArea className="min-h-screen bg-zinc-900 text-white">
       {/* Header с аватаркой */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-zinc-900/80 backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center gap-3 p-4">
@@ -131,6 +132,6 @@ export default function Home() {
           </Link>
         </div>
       </nav>
-    </div>
+    </SafeArea>
   )
 }

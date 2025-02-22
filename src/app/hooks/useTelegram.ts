@@ -8,6 +8,7 @@ export function useTelegram() {
   const [userName, setUserName] = useState<string>('')
   const [isExpanded, setIsExpanded] = useState(false)
   const [userId, setUserId] = useState<number>(0)
+  const [safeAreaInset, setSafeAreaInset] = useState({ top: 0, right: 0, bottom: 0, left: 0 })
 
   useEffect(() => {
     // Ждем загрузки скрипта
@@ -25,6 +26,11 @@ export function useTelegram() {
         webApp.setHeaderColor('#1a1a1a')
         webApp.setBackgroundColor('#1a1a1a')
         setIsExpanded(true)
+
+        // Получаем SafeArea
+        if (webApp.SafeAreaInset) {
+          setSafeAreaInset(webApp.SafeAreaInset)
+        }
 
         // Получаем данные пользователя
         if (webApp.initDataUnsafe?.user) {
@@ -56,6 +62,7 @@ export function useTelegram() {
     userPhoto,
     userName,
     userId,
-    isExpanded
+    isExpanded,
+    safeAreaInset
   }
 } 
