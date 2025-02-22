@@ -13,7 +13,7 @@ export function SafeArea({ children, className = '' }: SafeAreaProps) {
   return (
     <div 
       style={{ 
-        paddingTop: `${safeAreaInset.top}px`,
+        paddingTop: '85px',
         paddingRight: `${safeAreaInset.right}px`,
         paddingBottom: `${safeAreaInset.bottom}px`,
         paddingLeft: `${safeAreaInset.left}px`

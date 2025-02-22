@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { format, formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { Icon } from '@iconify/react'
-import { MdOutlineCalendarToday, MdCheck, MdOutlineAccessTime, MdDelete, MdOutlineRepeat, MdOutlineNotes, MdOutlineChecklist } from 'react-icons/md'
+import { MdOutlineCalendarToday, MdCheck, MdOutlineAccessTime, MdDelete, MdOutlineRepeat, MdOutlineNotes, MdOutlineChecklist, MdOutlineToday } from 'react-icons/md'
 import { supabase } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import { Todo } from '@/types/todo'
@@ -101,6 +101,25 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete, listView }: TodoCar
       toast.error('Не удалось создать новую задачу')
     } else {
       toast.success('Задача выполнена и пересоздана на завтра')
+    }
+  }
+
+  const handleRescheduleToToday = async () => {
+    const newDeadline = new Date()
+    newDeadline.setHours(newDeadline.getHours() + 2)
+    
+    try {
+      const { error } = await supabase
+        .from('todos')
+        .update({ deadline: newDeadline.toISOString() })
+        .eq('id', todo.id)
+
+      if (error) throw error
+
+      onToggle(todo.id)
+      toast.success('Задача перенесена на сегодня')
+    } catch (error) {
+      toast.error('Не удалось перенести задачу')
     }
   }
 
@@ -234,6 +253,17 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete, listView }: TodoCar
               <MdOutlineRepeat className="w-4 h-4" />
               <MdCheck className="w-4 h-4" />
             </div>
+          </motion.button>
+
+          {/* Перенести на сегодня +2 часа */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={handleRescheduleToToday}
+            className="p-2 rounded-xl bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm"
+            title="Перенести на сегодня +2 часа"
+          >
+            <MdOutlineToday className="w-4 h-4" />
           </motion.button>
 
           {/* Удалить */}
