@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react'
 import { AnalysisCard } from './analysis/AnalysisCard'
 import { MessageHistory } from './analysis/MessageHistory'
 import { ParticipantInfo } from './analysis/ParticipantInfo'
+import { useTelegram } from '@/app/hooks/useTelegram'
 
 interface Props {
   contact: Contact
@@ -17,11 +18,12 @@ export function ContactCard({ contact, onClose, onAnalyze, isAnalyzing }: Props)
   const summary = contact.summary || contact.history?.analysis
   const messages = contact.history?.raw?.messages || []
   const modalRef = useRef<HTMLDivElement>(null)
+  const { safeAreaInset } = useTelegram()
 
   useEffect(() => {
     if (modalRef.current) {
       const scrollY = window.scrollY
-      modalRef.current.style.top = `${scrollY}px`
+      modalRef.current.style.top = `${scrollY + safeAreaInset.top}px`
       document.body.style.overflow = 'hidden'
       document.body.style.paddingRight = '15px'
     }
@@ -30,11 +32,15 @@ export function ContactCard({ contact, onClose, onAnalyze, isAnalyzing }: Props)
       document.body.style.overflow = ''
       document.body.style.paddingRight = ''
     }
-  }, [])
+  }, [safeAreaInset.top])
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center overflow-y-auto z-50"
-         ref={modalRef}>
+         ref={modalRef}
+         style={{
+           paddingTop: `${safeAreaInset.top}px`,
+           paddingBottom: `${safeAreaInset.bottom}px`
+         }}>
       <div className="my-8 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 
         border border-gray-800/50 rounded-2xl p-6 max-w-4xl w-full
         shadow-[0_0_30px_rgba(0,0,0,0.3)] animate-fadeIn">

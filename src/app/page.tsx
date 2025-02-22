@@ -76,7 +76,7 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="pt-[85px] pb-[80px]">
+      <main className="pb-[80px]">
         <div className="px-4 py-6 space-y-6">
           {menuItems.map((item, index) => (
             <Link key={item.href} href={item.href}>
