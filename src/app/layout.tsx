@@ -22,6 +22,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Определяем, находимся ли мы в Telegram WebApp
+  const isTelegramWebApp = typeof window !== 'undefined' && 
+    window.location.href.includes('tgWebAppData') || 
+    window.location.href.includes('tgWebAppPlatform');
+
   return (
     <html lang="en">
       <head>
@@ -32,6 +37,7 @@ export default function RootLayout({
             })}`,
           }}
         />
+        {/* Загружаем скрипт Telegram WebApp, даже если не в Telegram, для совместимости */}
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
       </head>
       <body className={inter.className}>

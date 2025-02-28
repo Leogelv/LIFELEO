@@ -1,179 +1,157 @@
 'use client'
 
-import { useState, useContext } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import HabitsList from '@/app/components/habits/HabitsList'
-import { supabase } from '@/utils/supabase/client'
-import { toast } from 'sonner'
-import { logger } from '@/utils/logger'
-import { MdOutlineWater, MdSportsKabaddi, MdSelfImprovement, MdAir, MdArrowBack } from 'react-icons/md'
-import { UserIdContext } from '@/contexts/UserIdContext'
-import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { SafeArea } from '../components/SafeArea'
-
-const habitCategories = [
-  { id: 'water', name: 'Пить воду', icon: MdOutlineWater, color: 'from-blue-500 to-blue-700', defaultValue: 2000 },
-  { id: 'sport', name: 'Тренировка', icon: MdSportsKabaddi, color: 'from-orange-500 to-orange-700', defaultValue: 60 },
-  { id: 'meditation', name: 'Медитация', icon: MdSelfImprovement, color: 'from-purple-500 to-purple-700', defaultValue: 20 },
-  { id: 'breathing', name: 'Дыхание', icon: MdAir, color: 'from-green-500 to-green-700', defaultValue: 10 }
-]
+import { BottomMenu } from '../components/BottomMenu'
+import { HabitCard } from '../components/habits/HabitCard'
+import { EditHabitModal } from '../components/habits/EditHabitModal'
+import { supabase } from '@/utils/supabase/client'
+import { useTelegram } from '../hooks/useTelegram'
+import { toast } from 'sonner'
+import { habitsRealtime } from '@/utils/habits-realtime'
+import { Habit } from '@/types/habit'
+import Link from 'next/link'
+import { Icon } from '@iconify/react'
 
 export default function HabitsPage() {
-  const [showModal, setShowModal] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [targetValue, setTargetValue] = useState<number>(0)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const userId = useContext(UserIdContext)
+  const { userId } = useTelegram()
+  const [habits, setHabits] = useState<Habit[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null)
 
-  const handleCreateHabit = async () => {
-    if (!selectedCategory) {
-      toast.error('Выберите категорию')
-      return
+  useEffect(() => {
+    const fetchHabits = async () => {
+      try {
+        setIsLoading(true)
+        const { data, error } = await supabase
+          .from('habits')
+          .select('*')
+          .eq('telegram_id', userId)
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          console.error('Error fetching habits:', error)
+          toast.error('Не удалось загрузить привычки')
+        } else {
+          setHabits(data || [])
+        }
+      } catch (error) {
+        console.error('Error:', error)
+        toast.error('Что-то пошло не так')
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    if (targetValue <= 0) {
-      toast.error('Укажите целевое значение')
-      return
+    fetchHabits()
+
+    // Подписка на изменения в реальном времени
+    const subscription = habitsRealtime.subscribe(userId, (updatedHabits) => {
+      setHabits(updatedHabits)
+    })
+
+    return () => {
+      subscription.unsubscribe()
     }
+  }, [userId])
 
-    try {
-      setIsSubmitting(true)
-      logger.debug('Создаем новую привычку', { 
-        category: selectedCategory,
-        targetValue
-      })
-
-      const { error } = await supabase
-        .from('habits')
-        .insert({
-          telegram_id: userId,
-          category: selectedCategory,
-          name: habitCategories.find(c => c.id === selectedCategory)?.name,
-          target_value: targetValue,
-          active: true
-        })
-
-      if (error) throw error
-
-      toast.success('Привычка создана!')
-      setShowModal(false)
-      setSelectedCategory(null)
-      setTargetValue(0)
-
-    } catch (error) {
-      logger.error('Ошибка при создании привычки', { error })
-      toast.error('Не удалось создать привычку')
-    } finally {
-      setIsSubmitting(false)
-    }
+  const handleAddHabit = () => {
+    setEditingHabit(null)
+    setShowAddModal(true)
   }
 
+  const handleEditHabit = (habit: Habit) => {
+    setEditingHabit(habit)
+    setShowAddModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowAddModal(false)
+    setEditingHabit(null)
+  }
+
+  // Группировка привычек по категориям
+  const habitsByCategory: Record<string, Habit[]> = {}
+  habits.forEach(habit => {
+    const category = habit.category || 'Без категории'
+    if (!habitsByCategory[category]) {
+      habitsByCategory[category] = []
+    }
+    habitsByCategory[category].push(habit)
+  })
+
   return (
-    <SafeArea className="min-h-screen bg-zinc-900 text-white">
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="container mx-auto p-4 space-y-6">
-          <div className="flex justify-between items-center">
+    <>
+      <SafeArea className="min-h-screen bg-gradient-to-b from-[#1A1A1A] to-[#0D0D0D] text-[#E8D9C5]">
+        <div className="container mx-auto px-4 py-8">
+          {/* Заголовок и кнопка назад */}
+          <div className="flex items-center justify-between mb-8">
             <Link 
               href="/"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl 
-                bg-white/5 hover:bg-white/10 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#2A2A2A]/50 hover:bg-[#2A2A2A] transition-colors"
             >
-              <MdArrowBack className="w-6 h-6" />
+              <Icon icon="solar:arrow-left-linear" className="w-5 h-5" />
               <span>Назад</span>
             </Link>
-            <h1 className="text-2xl font-medium">Привычки</h1>
+            <h1 className="text-2xl font-bold">Привычки</h1>
             <button
-              onClick={() => setShowModal(true)}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              onClick={handleAddHabit}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#2A2A2A]/50 hover:bg-[#2A2A2A] transition-colors"
             >
-              Добавить привычку
+              <Icon icon="solar:add-circle-bold" className="w-5 h-5" />
+              <span>Новая</span>
             </button>
           </div>
 
-          <HabitsList />
-
-          <AnimatePresence>
-            {showModal && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-                onClick={() => setShowModal(false)}
-              >
-                <motion.div
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0.9 }}
-                  className="bg-zinc-900 p-6 rounded-xl max-w-sm w-full"
-                  onClick={e => e.stopPropagation()}
-                >
-                  <h3 className="text-lg font-medium mb-4">Новая привычка</h3>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm opacity-60 mb-2">
-                        Категория
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {habitCategories.map(category => (
-                          <button
-                            key={category.id}
-                            onClick={() => {
-                              setSelectedCategory(category.id)
-                              setTargetValue(category.defaultValue)
-                            }}
-                            className={`
-                              flex items-center gap-2 p-3 rounded-lg transition-colors
-                              ${selectedCategory === category.id 
-                                ? `bg-gradient-to-br ${category.color}` 
-                                : 'bg-zinc-800 hover:bg-zinc-700'
-                              }
-                            `}
-                          >
-                            <category.icon className="w-5 h-5" />
-                            <span>{category.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm opacity-60 mb-2">
-                        Целевое значение ({selectedCategory === 'water' ? 'мл' : 'мин'})
-                      </label>
-                      <input
-                        type="number"
-                        value={targetValue}
-                        onChange={e => setTargetValue(parseInt(e.target.value))}
-                        className="w-full px-3 py-2 bg-zinc-800 rounded-lg"
-                        placeholder="Введите значение"
+          {/* Список привычек по категориям */}
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#E8D9C5]"></div>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {Object.entries(habitsByCategory).map(([category, categoryHabits]) => (
+                <div key={category} className="space-y-4">
+                  <h2 className="text-xl font-semibold border-b border-[#E8D9C5]/10 pb-2">{category}</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {categoryHabits.map(habit => (
+                      <HabitCard 
+                        key={habit.id} 
+                        habit={habit} 
+                        onEdit={() => handleEditHabit(habit)} 
                       />
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <button
-                        onClick={() => setShowModal(false)}
-                        className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
-                      >
-                        Отмена
-                      </button>
-                      <button
-                        onClick={handleCreateHabit}
-                        disabled={isSubmitting || !selectedCategory || targetValue <= 0}
-                        className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isSubmitting ? 'Создание...' : 'Создать'}
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </div>
+              ))}
+
+              {habits.length === 0 && (
+                <div className="text-center py-12 bg-[#2A2A2A]/30 rounded-xl border border-[#E8D9C5]/10">
+                  <Icon icon="solar:star-bold" className="w-16 h-16 mx-auto mb-4 text-[#E8D9C5]/30" />
+                  <h3 className="text-xl font-semibold mb-2">Нет привычек</h3>
+                  <p className="text-[#E8D9C5]/70 mb-6">Создайте свою первую привычку, чтобы начать отслеживать прогресс</p>
+                  <button
+                    onClick={handleAddHabit}
+                    className="px-6 py-3 bg-[#E8D9C5]/10 hover:bg-[#E8D9C5]/20 rounded-lg transition-colors"
+                  >
+                    Создать привычку
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      </div>
-    </SafeArea>
+
+        {/* Модальное окно для добавления/редактирования привычки */}
+        {showAddModal && (
+          <EditHabitModal
+            habit={editingHabit}
+            onClose={handleCloseModal}
+          />
+        )}
+      </SafeArea>
+      <BottomMenu />
+    </>
   )
 } 

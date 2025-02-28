@@ -10,6 +10,7 @@ import { supabase } from '@/utils/supabase/client'
 import { realtime } from '@/utils/realtime'
 import { habitsRealtime } from '@/utils/habits-realtime'
 import { SafeArea } from './components/SafeArea'
+import { BottomMenu } from './components/BottomMenu'
 
 interface TaskStats {
   overdue: number
@@ -53,85 +54,76 @@ const menuItems = [
 ]
 
 export default function Home() {
-  const { userPhoto, userName } = useTelegram()
-  const [activeTab, setActiveTab] = useState('home')
+  const { user, isTelegramWebApp } = useTelegram()
 
   return (
-    <SafeArea className="min-h-screen bg-zinc-900 text-white">
-      {/* Header с аватаркой */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-zinc-900/80 backdrop-blur-xl border-b border-white/10">
-        <div className="flex items-center gap-3 p-4">
-          {userPhoto && (
-            <img 
-              src={userPhoto} 
-              alt={userName}
-              className="w-10 h-10 rounded-full border border-white/20"
-            />
-          )}
-          <div className="font-light">
-            <div className="text-white/60 text-sm">Привет,</div>
-            <div className="text-white">{userName || 'Друг'}</div>
+    <>
+      <SafeArea className="min-h-screen bg-gradient-to-b from-[#1A1A1A] to-[#0D0D0D] text-[#E8D9C5]">
+        <div className="container mx-auto px-4 py-8">
+          {/* Заголовок и приветствие */}
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold mb-2">LIFELEO</h1>
+            <p className="text-[#E8D9C5]/80">
+              Привет, {user?.firstName || 'Гость'}! Добро пожаловать в твой личный органайзер.
+            </p>
+          </div>
+
+          {/* Основные разделы */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <Link href="/tasks" className="block">
+              <div className="bg-[#2A2A2A] rounded-xl p-6 border border-[#E8D9C5]/10 hover:border-[#E8D9C5]/20 transition-all">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 rounded-full bg-[#E8D9C5]/10 flex items-center justify-center mr-4">
+                    <Icon icon="solar:checklist-minimalistic-bold" className="w-6 h-6 text-[#E8D9C5]" />
+                  </div>
+                  <h2 className="text-xl font-semibold">Задачи</h2>
+                </div>
+                <p className="text-[#E8D9C5]/70">Управляй своими задачами, устанавливай приоритеты и отслеживай прогресс.</p>
+              </div>
+            </Link>
+
+            <Link href="/habits" className="block">
+              <div className="bg-[#2A2A2A] rounded-xl p-6 border border-[#E8D9C5]/10 hover:border-[#E8D9C5]/20 transition-all">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 rounded-full bg-[#E8D9C5]/10 flex items-center justify-center mr-4">
+                    <Icon icon="solar:star-bold" className="w-6 h-6 text-[#E8D9C5]" />
+                  </div>
+                  <h2 className="text-xl font-semibold">Привычки</h2>
+                </div>
+                <p className="text-[#E8D9C5]/70">Формируй полезные привычки и отслеживай свой прогресс день за днем.</p>
+              </div>
+            </Link>
+
+            <Link href="/contacts" className="block">
+              <div className="bg-[#2A2A2A] rounded-xl p-6 border border-[#E8D9C5]/10 hover:border-[#E8D9C5]/20 transition-all">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 rounded-full bg-[#E8D9C5]/10 flex items-center justify-center mr-4">
+                    <Icon icon="solar:users-group-rounded-bold" className="w-6 h-6 text-[#E8D9C5]" />
+                  </div>
+                  <h2 className="text-xl font-semibold">Контакты</h2>
+                </div>
+                <p className="text-[#E8D9C5]/70">Управляй своими контактами и поддерживай связь с важными людьми.</p>
+              </div>
+            </Link>
+
+            {!isTelegramWebApp && (
+              <div className="bg-[#2A2A2A] rounded-xl p-6 border border-[#E8D9C5]/10">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 rounded-full bg-[#E8D9C5]/10 flex items-center justify-center mr-4">
+                    <Icon icon="solar:info-circle-bold" className="w-6 h-6 text-[#E8D9C5]" />
+                  </div>
+                  <h2 className="text-xl font-semibold">О приложении</h2>
+                </div>
+                <p className="text-[#E8D9C5]/70">
+                  LIFELEO - это приложение для управления задачами, привычками и контактами. 
+                  Доступно как в браузере, так и в Telegram.
+                </p>
+              </div>
+            )}
           </div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="pb-[80px]">
-        <div className="px-4 py-6 space-y-6">
-          {menuItems.map((item, index) => (
-            <Link key={item.href} href={item.href}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ 
-                  opacity: 1, 
-                  y: 0,
-                  transition: { delay: index * 0.1 }
-                }}
-                whileTap={{ scale: 0.98 }}
-                className={`
-                  p-6 rounded-2xl bg-gradient-to-br ${item.gradient}
-                  border border-white/20 relative overflow-hidden
-                `}
-              >
-                <div className="flex items-start gap-4">
-                  <Icon icon={item.icon} className="w-8 h-8 shrink-0" />
-                  <div>
-                    <h2 className="text-xl font-light">{item.title}</h2>
-                    <p className="text-white/60 text-sm">{item.description}</p>
-                  </div>
-                </div>
-              </motion.div>
-            </Link>
-          ))}
-        </div>
-      </main>
-
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900/80 backdrop-blur-xl border-t border-white/10">
-        <div className="flex items-center justify-around p-4">
-          <button
-            onClick={() => setActiveTab('home')}
-            className={`flex flex-col items-center gap-1 ${
-              activeTab === 'home' ? 'text-white' : 'text-white/60'
-            }`}
-          >
-            <Icon icon="solar:home-2-bold" className="w-6 h-6" />
-            <span className="text-xs">Главная</span>
-          </button>
-
-          <Link 
-            href="https://kpcaller2.vercel.app"
-            target="_blank"
-            className={`flex flex-col items-center gap-1 ${
-              activeTab === 'voice' ? 'text-white' : 'text-white/60'
-            }`}
-            onClick={() => setActiveTab('voice')}
-          >
-            <Icon icon="solar:microphone-bold" className="w-6 h-6" />
-            <span className="text-xs">Голос</span>
-          </Link>
-        </div>
-      </nav>
-    </SafeArea>
+      </SafeArea>
+      <BottomMenu />
+    </>
   )
 }

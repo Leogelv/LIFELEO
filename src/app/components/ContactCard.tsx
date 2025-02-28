@@ -18,12 +18,12 @@ export function ContactCard({ contact, onClose, onAnalyze, isAnalyzing }: Props)
   const summary = contact.summary || contact.history?.analysis
   const messages = contact.history?.raw?.messages || []
   const modalRef = useRef<HTMLDivElement>(null)
-  const { safeAreaInset } = useTelegram()
+  const { safeAreaInset, isTelegramWebApp } = useTelegram()
 
   useEffect(() => {
     if (modalRef.current) {
       const scrollY = window.scrollY
-      modalRef.current.style.top = `${scrollY + safeAreaInset.top}px`
+      modalRef.current.style.top = `${scrollY + (isTelegramWebApp ? safeAreaInset.top : 0)}px`
       document.body.style.overflow = 'hidden'
       document.body.style.paddingRight = '15px'
     }
@@ -32,14 +32,14 @@ export function ContactCard({ contact, onClose, onAnalyze, isAnalyzing }: Props)
       document.body.style.overflow = ''
       document.body.style.paddingRight = ''
     }
-  }, [safeAreaInset.top])
+  }, [safeAreaInset.top, isTelegramWebApp])
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center overflow-y-auto z-50"
          ref={modalRef}
          style={{
-           paddingTop: `${safeAreaInset.top}px`,
-           paddingBottom: `${safeAreaInset.bottom}px`
+           paddingTop: isTelegramWebApp ? `${safeAreaInset.top}px` : '0px',
+           paddingBottom: isTelegramWebApp ? `${safeAreaInset.bottom}px` : '0px'
          }}>
       <div className="my-8 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 
         border border-gray-800/50 rounded-2xl p-6 max-w-4xl w-full
