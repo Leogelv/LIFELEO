@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react'
 import { supabase } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import { logger } from '@/utils/logger'
+import { useTelegram } from '@/app/hooks/useTelegram'
 
 interface AddHabitModalProps {
   isOpen: boolean
@@ -27,6 +28,7 @@ export function AddHabitModal({ isOpen, onClose, onHabitAdded }: AddHabitModalPr
   const [repeatType, setRepeatType] = useState<'daily' | 'weekly'>('daily')
   const [timeOfDay, setTimeOfDay] = useState('09:00')
   const [isLoading, setIsLoading] = useState(false)
+  const { safeAreaInset, isTelegramWebApp } = useTelegram()
 
   // Сброс формы при открытии
   const resetForm = () => {
@@ -79,14 +81,25 @@ export function AddHabitModal({ isOpen, onClose, onHabitAdded }: AddHabitModalPr
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          style={{
+            paddingTop: isTelegramWebApp ? `${safeAreaInset.top}px` : '16px',
+            paddingBottom: isTelegramWebApp ? `${safeAreaInset.bottom}px` : '16px',
+            paddingLeft: isTelegramWebApp ? `${safeAreaInset.left}px` : '16px',
+            paddingRight: isTelegramWebApp ? `${safeAreaInset.right}px` : '16px'
+          }}
           onClick={onClose}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="w-full max-w-lg p-6 bg-gray-900 rounded-2xl shadow-xl space-y-6"
+            className="w-full max-w-lg bg-gray-900 rounded-2xl shadow-xl space-y-6"
+            style={{
+              padding: isTelegramWebApp ? 
+                `${Math.max(16, safeAreaInset.top)}px ${Math.max(16, safeAreaInset.right)}px ${Math.max(16, safeAreaInset.bottom)}px ${Math.max(16, safeAreaInset.left)}px` : 
+                '24px'
+            }}
             onClick={e => e.stopPropagation()}
           >
             <h3 className="text-xl font-medium text-white">Новая привычка</h3>

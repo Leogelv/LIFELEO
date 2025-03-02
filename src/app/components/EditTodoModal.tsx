@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { Todo } from '@/types/todo'
 import { realtime } from '@/utils/realtime'
 import { logger } from '@/utils/logger'
+import { useTelegram } from '@/app/hooks/useTelegram'
 
 // Категории
 const categories = [
@@ -37,6 +38,7 @@ interface EditTodoModalProps {
 }
 
 export function EditTodoModal({ todo, onClose, onSave }: EditTodoModalProps) {
+  const { safeAreaInset, isTelegramWebApp } = useTelegram()
   const [editingTodo, setEditingTodo] = useState<Todo | null>(todo)
   const [subtasks, setSubtasks] = useState<Subtask[]>([])
   const [newSubtask, setNewSubtask] = useState('')
@@ -240,7 +242,13 @@ export function EditTodoModal({ todo, onClose, onSave }: EditTodoModalProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto"
+      style={{
+        paddingTop: isTelegramWebApp ? `${safeAreaInset.top}px` : '16px',
+        paddingBottom: isTelegramWebApp ? `${safeAreaInset.bottom}px` : '16px',
+        paddingLeft: isTelegramWebApp ? `${safeAreaInset.left}px` : '16px',
+        paddingRight: isTelegramWebApp ? `${safeAreaInset.right}px` : '16px'
+      }}
       onClick={onClose}
     >
       <motion.div
@@ -248,7 +256,7 @@ export function EditTodoModal({ todo, onClose, onSave }: EditTodoModalProps) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         className="w-full max-w-2xl p-6 bg-gray-900 rounded-2xl shadow-xl space-y-4 my-8"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-xl font-medium text-white">Редактировать задачу</h3>
 

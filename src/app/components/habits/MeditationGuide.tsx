@@ -7,6 +7,7 @@ import { habitsRealtime } from '@/utils/habits-realtime'
 import { logger } from '@/utils/logger'
 import { UserIdContext } from '@/contexts/UserIdContext'
 import { Icon } from '@iconify/react'
+import { useTelegram } from '@/app/hooks/useTelegram'
 
 interface MeditationStats {
   totalHours: number
@@ -102,6 +103,7 @@ export function MeditationGuide({ habit, onClose }: MeditationGuideProps) {
   const [stats, setStats] = useState<MeditationStats | null>(null)
   const [currentStage, setCurrentStage] = useState<Stage | null>(null)
   const userId = useContext(UserIdContext)
+  const { safeAreaInset, isTelegramWebApp } = useTelegram()
 
   const loadMeditationStats = async () => {
     try {
@@ -167,13 +169,24 @@ export function MeditationGuide({ habit, onClose }: MeditationGuideProps) {
     : 100
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+         style={{
+           paddingTop: isTelegramWebApp ? `${safeAreaInset.top}px` : '16px',
+           paddingBottom: isTelegramWebApp ? `${safeAreaInset.bottom}px` : '16px',
+           paddingLeft: isTelegramWebApp ? `${safeAreaInset.left}px` : '16px',
+           paddingRight: isTelegramWebApp ? `${safeAreaInset.right}px` : '16px'
+         }}
          onClick={onClose}>
       <div 
         className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl"
         onClick={e => e.stopPropagation()}
       >
-        <div className="space-y-6 p-6 bg-zinc-900/50 rounded-2xl backdrop-blur-xl">
+        <div className="space-y-6 bg-zinc-900/50 rounded-2xl backdrop-blur-xl"
+             style={{
+               padding: isTelegramWebApp ? 
+                 `${Math.max(16, safeAreaInset.top)}px ${Math.max(16, safeAreaInset.right)}px ${Math.max(16, safeAreaInset.bottom)}px ${Math.max(16, safeAreaInset.left)}px` : 
+                 '24px'
+             }}>
           {/* Кнопка закрытия */}
           <div className="flex justify-between items-center">
             <h3 className="text-xl font-medium text-purple-400">Ваш путь в Випассане</h3>

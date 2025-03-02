@@ -55,6 +55,18 @@ export const BottomMenu = () => {
           </Link>
           
           <Link 
+            href="/notes" 
+            className={`flex flex-col items-center gap-1 p-2 ${
+              pathname === '/notes' 
+                ? 'text-[#E8D9C5]' 
+                : 'text-[#E8D9C5]/60 hover:text-[#E8D9C5]/80'
+            }`}
+          >
+            <Icon icon="solar:notes-bold" className="w-6 h-6" />
+            <span className="text-xs">Заметки</span>
+          </Link>
+          
+          <Link 
             href="/contacts" 
             className={`flex flex-col items-center gap-1 p-2 ${
               pathname === '/contacts' 

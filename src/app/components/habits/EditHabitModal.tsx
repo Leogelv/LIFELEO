@@ -13,6 +13,7 @@ import { habitsRealtime } from '@/utils/habits-realtime'
 import { logger } from '@/utils/logger'
 import { categoryConfig, type HabitCategory } from './config/categoryConfig'
 import { SafeArea } from '@/app/components/SafeArea'
+import { useTelegram } from '@/app/hooks/useTelegram'
 
 // Дефолтные значения для кнопок по категориям
 const defaultButtons = {
@@ -71,6 +72,7 @@ export function EditHabitModal({ habit, onClose, onSave }: EditHabitModalProps) 
   const config = categoryConfig[habit.category]
   const buttons = defaultButtons[habit.category]
   const [statsView, setStatsView] = useState<'week' | 'month'>('week')
+  const { safeAreaInset, isTelegramWebApp } = useTelegram()
 
   // Загрузка статистики
   useEffect(() => {
@@ -280,7 +282,12 @@ export function EditHabitModal({ habit, onClose, onSave }: EditHabitModalProps) 
           initial={{ scale: 0.9 }}
           animate={{ scale: 1 }}
           exit={{ scale: 0.9 }}
-          className="bg-zinc-900/90 backdrop-blur-xl rounded-2xl p-6 mx-4"
+          className="bg-zinc-900/90 backdrop-blur-xl rounded-2xl mx-4"
+          style={{
+            padding: isTelegramWebApp ? 
+              `${Math.max(16, safeAreaInset.top)}px ${Math.max(16, safeAreaInset.right)}px ${Math.max(16, safeAreaInset.bottom)}px ${Math.max(16, safeAreaInset.left)}px` : 
+              '24px'
+          }}
           onClick={e => e.stopPropagation()}
         >
           {/* Заголовок */}
