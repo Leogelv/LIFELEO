@@ -77,6 +77,18 @@ export const BottomMenu = () => {
             <Icon icon="solar:users-group-rounded-bold" className="w-6 h-6" />
             <span className="text-xs">Контакты</span>
           </Link>
+          
+          <Link 
+            href="/login" 
+            className={`flex flex-col items-center gap-1 p-2 ${
+              pathname === '/login' 
+                ? 'text-[#E8D9C5]' 
+                : 'text-[#E8D9C5]/60 hover:text-[#E8D9C5]/80'
+            }`}
+          >
+            <Icon icon="solar:user-id-bold" className="w-6 h-6" />
+            <span className="text-xs">Вход</span>
+          </Link>
         </div>
       </div>
     </div>
