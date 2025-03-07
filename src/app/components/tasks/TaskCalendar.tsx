@@ -106,6 +106,94 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
     }
   }
 
+  // Функция для переключения статуса выполнения задачи
+  const toggleTaskCompletion = async (taskId: string) => {
+    if (!userId) return
+    
+    setIsLoading(true)
+    
+    try {
+      // Находим задачу в списке
+      const task = todos.find(t => t.id === taskId)
+      if (!task) {
+        toast.error('Задача не найдена')
+        return
+      }
+      
+      // Обновляем статус в базе данных
+      const { error } = await supabase
+        .from('todos')
+        .update({ 
+          done: !task.done,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId)
+        .eq('telegram_id', userId)
+      
+      if (error) {
+        throw error
+      }
+      
+      // Обновляем задачу в состоянии
+      const updatedTask = { ...task, done: !task.done }
+      onTodoUpdate(updatedTask)
+      
+      toast.success(task.done ? 'Задача отмечена как невыполненная' : 'Задача отмечена как выполненная')
+      logger.info('Статус задачи обновлен', { taskId, done: !task.done })
+    } catch (error) {
+      logger.error('Ошибка при обновлении статуса задачи', error)
+      toast.error('Не удалось обновить статус задачи')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Функция для переноса задачи на сегодня +2 часа
+  const rescheduleTaskToToday = async (taskId: string) => {
+    if (!userId) return
+    
+    setIsLoading(true)
+    
+    try {
+      // Находим задачу в списке
+      const task = todos.find(t => t.id === taskId)
+      if (!task) {
+        toast.error('Задача не найдена')
+        return
+      }
+      
+      // Создаем новую дату (сегодня + 2 часа)
+      const newDeadline = new Date()
+      newDeadline.setHours(newDeadline.getHours() + 2)
+      
+      // Обновляем дедлайн в базе данных
+      const { error } = await supabase
+        .from('todos')
+        .update({ 
+          deadline: newDeadline.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId)
+        .eq('telegram_id', userId)
+      
+      if (error) {
+        throw error
+      }
+      
+      // Обновляем задачу в состоянии
+      const updatedTask = { ...task, deadline: newDeadline.toISOString() }
+      onTodoUpdate(updatedTask)
+      
+      toast.success('Задача перенесена на сегодня')
+      logger.info('Задача перенесена на сегодня', { taskId, newDeadline })
+    } catch (error) {
+      logger.error('Ошибка при переносе задачи', error)
+      toast.error('Не удалось перенести задачу')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Функция для обработки начала перетаскивания
   const handleDragStart = (task: Todo) => {
     setDraggedTask(task)
@@ -151,7 +239,7 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
             onDragStart={(e) => handleDragStart(task)}
             onDragEnd={(e) => handleDragEnd(e, task)}
             className={`
-              text-xs p-1.5 rounded-md cursor-move
+              text-xs p-1.5 rounded-md cursor-move group relative
               ${task.done 
                 ? 'bg-emerald-500/20 text-emerald-300 line-through' 
                 : isAfter(new Date(), new Date(task.deadline))
@@ -169,6 +257,35 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
                     : 'bg-[#E8D9C5]/60'
               }`} />
               <span className="truncate">{task.name}</span>
+              
+              {/* Кнопки действий - появляются при наведении */}
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Кнопка выполнения */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    toggleTaskCompletion(task.id);
+                  }}
+                  className="p-1 rounded-md bg-[#E8D9C5]/10 hover:bg-[#E8D9C5]/20 text-[#E8D9C5]"
+                  title={task.done ? "Отметить как невыполненную" : "Отметить как выполненную"}
+                >
+                  <Icon icon="solar:check-circle-bold" className="w-3 h-3" />
+                </button>
+                
+                {/* Кнопка переноса на сегодня */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    rescheduleTaskToToday(task.id);
+                  }}
+                  className="p-1 rounded-md bg-[#E8D9C5]/10 hover:bg-[#E8D9C5]/20 text-[#E8D9C5]"
+                  title="Перенести на сегодня +2 часа"
+                >
+                  <Icon icon="solar:calendar-today-bold" className="w-3 h-3" />
+                </button>
+              </div>
             </div>
           </div>
         ))}
