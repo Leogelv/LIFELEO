@@ -3,17 +3,34 @@
 import { useEffect, useState } from 'react'
 import type { TelegramWebApp } from '../types/telegram-webapp'
 
+// Дефолтные значения для безопасного серверного рендеринга
+const defaultSafeAreaInset = { top: 0, right: 0, bottom: 0, left: 0 }
+const defaultUser = {
+  id: 0,
+  firstName: '',
+  lastName: '',
+  username: '',
+  photoUrl: ''
+}
+
 export function useTelegram() {
   const [userPhoto, setUserPhoto] = useState<string>('')
   const [userName, setUserName] = useState<string>('')
   const [isExpanded, setIsExpanded] = useState(false)
   const [userId, setUserId] = useState<number>(0)
-  const [safeAreaInset, setSafeAreaInset] = useState({ top: 0, right: 0, bottom: 0, left: 0 })
+  const [safeAreaInset, setSafeAreaInset] = useState(defaultSafeAreaInset)
   const [isTelegramWebApp, setIsTelegramWebApp] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [isClient, setIsClient] = useState(false)
+
+  // Проверяем, что мы на клиенте
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   useEffect(() => {
-    if (isInitialized) return;
+    // Если не на клиенте или уже инициализировано, выходим
+    if (!isClient || isInitialized) return;
 
     // Проверяем URL параметры для браузерной версии
     const checkUrlParams = () => {
@@ -55,12 +72,12 @@ export function useTelegram() {
     const initTelegram = () => {
       if (typeof window === 'undefined') return false;
       
-      const telegram = window.Telegram
-      const webApp = telegram?.WebApp
+      try {
+        const telegram = window.Telegram
+        const webApp = telegram?.WebApp
 
-      if (webApp) {
-        // Инициализация WebApp
-        try {
+        if (webApp) {
+          // Инициализация WebApp
           webApp.ready()
           webApp.expand()
           
@@ -97,11 +114,12 @@ export function useTelegram() {
             setIsInitialized(true)
             return true
           }
-        } catch (error) {
-          console.error('Ошибка при инициализации Telegram WebApp:', error)
         }
+        return false
+      } catch (error) {
+        console.error('Ошибка при инициализации Telegram WebApp:', error)
+        return false
       }
-      return false
     }
 
     // Определяем, в каком окружении запущено приложение
@@ -142,7 +160,7 @@ export function useTelegram() {
         }
       }
     }
-  }, [isInitialized])
+  }, [isClient, isInitialized])
 
   // Создаем объект user для удобства
   const user = {
@@ -161,6 +179,7 @@ export function useTelegram() {
     safeAreaInset,
     isTelegramWebApp,
     user,
-    isInitialized
+    isInitialized,
+    isClient
   }
 } 

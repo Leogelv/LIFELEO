@@ -10,18 +10,25 @@ export default function LoginPage() {
   const [name, setName] = useState('Гость')
   const [loginUrl, setLoginUrl] = useState('')
   const [copied, setCopied] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Генерируем URL для входа
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && mounted) {
       const baseUrl = window.location.origin
       const url = `${baseUrl}/?user_id=${userId}&name=${encodeURIComponent(name)}`
       setLoginUrl(url)
     }
-  }, [userId, name])
+  }, [userId, name, mounted])
 
   // Копируем URL в буфер обмена
   const copyToClipboard = () => {
+    if (typeof navigator === 'undefined') return;
+    
     navigator.clipboard.writeText(loginUrl)
       .then(() => {
         setCopied(true)
@@ -30,6 +37,18 @@ export default function LoginPage() {
       .catch(err => {
         console.error('Не удалось скопировать URL:', err)
       })
+  }
+
+  // Базовый рендер для сервера
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-[#1A1A1A] text-[#E8D9C5] p-4">
+        <div className="max-w-md mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Вход в LIFELEO</h1>
+          <p>Загрузка...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

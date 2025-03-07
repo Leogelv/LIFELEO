@@ -12,9 +12,16 @@ export default function NotFound() {
     setMounted(true)
   }, [])
 
-  // Предотвращаем ошибку "window is not defined" при серверном рендеринге
+  // Базовый рендер для сервера
   if (!mounted) {
-    return null
+    return (
+      <div className="min-h-screen bg-[#1A1A1A] flex flex-col items-center justify-center text-[#E8D9C5] p-4">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">404</h1>
+          <h2 className="text-2xl mb-6">Страница не найдена</h2>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -4,10 +4,21 @@ import { Icon } from '@iconify/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTelegram } from '../hooks/useTelegram'
+import { useEffect, useState } from 'react'
 
 export const BottomMenu = () => {
   const pathname = usePathname()
-  const { isTelegramWebApp } = useTelegram()
+  const { isTelegramWebApp, isClient } = useTelegram()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Не рендерим меню на сервере или если не загружен клиент
+  if (!mounted || !isClient) {
+    return null
+  }
 
   // Если мы в Telegram WebApp, используем нативное меню Telegram
   if (isTelegramWebApp) {
