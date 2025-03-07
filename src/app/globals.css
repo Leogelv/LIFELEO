@@ -6,6 +6,8 @@
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 0, 0, 0;
   --background-end-rgb: 0, 0, 0;
+  --animation-duration: 0.3s;
+  --transition-duration: 0.3s;
 }
 
 body {
@@ -71,4 +73,57 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+/* Оптимизации для слабых устройств */
+.reduce-motion * {
+  animation-duration: 0.1s !important;
+  transition-duration: 0.1s !important;
+  animation-delay: 0s !important;
+  transition-delay: 0s !important;
+}
+
+.reduce-shadows * {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.simple-gradients * {
+  background-image: none !important;
+}
+
+.reduce-transparency * {
+  opacity: 1 !important;
+}
+
+/* Оптимизация для скроллинга */
+.is-scrolling * {
+  pointer-events: none;
+}
+
+/* Оптимизация для анимаций */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.1s !important;
+    transition-duration: 0.1s !important;
+    animation-delay: 0s !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/* Оптимизация для изображений */
+img {
+  content-visibility: auto;
+}
+
+/* Оптимизация для текста */
+p, h1, h2, h3, h4, h5, h6 {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 1000px;
+}
+
+/* Оптимизация для списков */
+ul, ol {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
 }
