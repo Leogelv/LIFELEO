@@ -116,7 +116,15 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete, listView }: TodoCar
 
       if (error) throw error
 
-      onToggle(todo.id)
+      // Удаляем вызов onToggle, который выполнял задачу
+      // onToggle(todo.id)
+      
+      // Обновляем задачу локально
+      onEdit({
+        ...todo,
+        deadline: newDeadline.toISOString()
+      })
+      
       toast.success('Задача перенесена на сегодня')
     } catch (error) {
       toast.error('Не удалось перенести задачу')
