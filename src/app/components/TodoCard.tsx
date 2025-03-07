@@ -9,6 +9,8 @@ import { MdOutlineCalendarToday, MdCheck, MdOutlineAccessTime, MdDelete, MdOutli
 import { supabase } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import { Todo } from '@/types/todo'
+import { logger } from '@/utils/logger'
+import { useTelegram } from '@/app/hooks/useTelegram'
 
 interface TodoCardProps {
   todo: Todo
@@ -42,6 +44,7 @@ const categoryIcons = {
 export function TodoCard({ todo, onToggle, onEdit, onDelete, listView }: TodoCardProps) {
   const [subtasksCount, setSubtasksCount] = useState<number>(0)
   const [completedSubtasksCount, setCompletedSubtasksCount] = useState<number>(0)
+  const { userId } = useTelegram()
 
   // Загрузка количества подзадач
   useEffect(() => {
@@ -104,32 +107,45 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete, listView }: TodoCar
     }
   }
 
+  // Функция для быстрого обновления дедлайна
   const handleRescheduleToToday = async () => {
-    const newDeadline = new Date()
-    newDeadline.setHours(newDeadline.getHours() + 2)
+    if (!userId) return;
     
     try {
+      // Создаем новую дату (сегодня + 2 часа)
+      const today = new Date();
+      today.setHours(today.getHours() + 2);
+      
+      // Обновляем задачу в базе данных
       const { error } = await supabase
         .from('todos')
-        .update({ deadline: newDeadline.toISOString() })
+        .update({ 
+          deadline: today.toISOString(),
+          updated_at: new Date().toISOString(),
+          // Явно устанавливаем done в false, чтобы убедиться, что задача не отмечена как выполненная
+          done: false
+        })
         .eq('id', todo.id)
-
-      if (error) throw error
-
-      // Удаляем вызов onToggle, который выполнял задачу
-      // onToggle(todo.id)
+        .eq('telegram_id', userId);
+      
+      if (error) throw error;
       
       // Обновляем задачу локально
-      onEdit({
-        ...todo,
-        deadline: newDeadline.toISOString()
-      })
+      const updatedTodo = { 
+        ...todo, 
+        deadline: today.toISOString(),
+        done: false // Явно устанавливаем done в false
+      };
+      onEdit(updatedTodo);
       
-      toast.success('Задача перенесена на сегодня')
+      // Показываем уведомление об успехе
+      toast.success('Задача перенесена на сегодня');
+      logger.info('Задача перенесена на сегодня', { todoId: todo.id });
     } catch (error) {
-      toast.error('Не удалось перенести задачу')
+      logger.error('Ошибка при переносе задачи', error);
+      toast.error('Не удалось перенести задачу');
     }
-  }
+  };
 
   return (
     <motion.div
