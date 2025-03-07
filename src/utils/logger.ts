@@ -6,13 +6,18 @@ class Logger {
   private static instance: Logger
   private logs: string[] = []
   private maxLogs: number = 1000
+  private isClient: boolean = false
 
   private constructor() {
-    // Очищаем старые логи при старте
-    try {
-      localStorage.removeItem('app_logs')
-    } catch (e) {
-      console.error('Failed to clear logs:', e)
+    this.isClient = typeof window !== 'undefined'
+    
+    // Очищаем старые логи при старте, только на клиенте
+    if (this.isClient) {
+      try {
+        localStorage.removeItem('app_logs')
+      } catch (e) {
+        console.error('Failed to clear logs:', e)
+      }
     }
   }
 
@@ -30,6 +35,9 @@ class Logger {
   }
 
   private saveLogs() {
+    // Сохраняем логи только на клиенте
+    if (!this.isClient) return
+    
     try {
       localStorage.setItem('app_logs', JSON.stringify(this.logs))
     } catch (e) {
@@ -51,19 +59,21 @@ class Logger {
     // Сохраняем в localStorage
     this.saveLogs()
     
-    // Выводим в консоль
-    switch (level) {
-      case 'error':
-        console.error(formattedMessage)
-        break
-      case 'warn':
-        console.warn(formattedMessage)
-        break
-      case 'debug':
-        console.debug(formattedMessage)
-        break
-      default:
-        console.log(formattedMessage)
+    // Выводим в консоль только на клиенте
+    if (this.isClient) {
+      switch (level) {
+        case 'error':
+          console.error(formattedMessage)
+          break
+        case 'warn':
+          console.warn(formattedMessage)
+          break
+        case 'debug':
+          console.debug(formattedMessage)
+          break
+        default:
+          console.log(formattedMessage)
+      }
     }
   }
 

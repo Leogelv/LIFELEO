@@ -8,16 +8,21 @@ import { MdClose, MdRefresh, MdDelete } from 'react-icons/md'
 export default function LogViewer() {
   const [isOpen, setIsOpen] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     // Обновляем логи каждую секунду если окно открыто
-    if (isOpen) {
+    if (isOpen && mounted) {
       const interval = setInterval(() => {
         setLogs(logger.getLogs())
       }, 1000)
       return () => clearInterval(interval)
     }
-  }, [isOpen])
+  }, [isOpen, mounted])
 
   const handleClearLogs = () => {
     logger.clearLogs()
@@ -26,6 +31,11 @@ export default function LogViewer() {
 
   const handleRefresh = () => {
     setLogs(logger.getLogs())
+  }
+
+  // Не рендерим на сервере
+  if (!mounted) {
+    return null
   }
 
   if (!isOpen) {
