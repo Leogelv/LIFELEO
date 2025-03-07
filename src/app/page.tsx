@@ -75,10 +75,18 @@ export default function Home() {
     return 'Доброй ночи';
   };
 
+  // Стили для отступов в Telegram WebApp
+  const containerStyle = isTelegramWebApp ? {
+    paddingTop: `${Math.max(safeAreaInset.top, 16)}px`,
+    paddingBottom: `${Math.max(safeAreaInset.bottom, 16)}px`,
+    paddingLeft: `${Math.max(safeAreaInset.left, 16)}px`,
+    paddingRight: `${Math.max(safeAreaInset.right, 16)}px`
+  } : {};
+
   return (
     <>
       <SafeArea className="min-h-screen bg-gradient-to-b from-[#1A1A1A] to-[#0D0D0D] text-[#E8D9C5]">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8" style={containerStyle}>
           {/* Заголовок и приветствие */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
