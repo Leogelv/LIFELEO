@@ -9,7 +9,7 @@ import { supabase } from '@/utils/supabase/client'
 import { useTelegram } from '../hooks/useTelegram'
 import { toast } from 'sonner'
 import { habitsRealtime } from '@/utils/habits-realtime'
-import { Habit } from '@/types/habit'
+import { Habit } from '../../types/habit'
 import Link from 'next/link'
 import { Icon } from '@iconify/react'
 
@@ -47,12 +47,16 @@ export default function HabitsPage() {
     fetchHabits()
 
     // Подписка на изменения в реальном времени
-    const subscription = habitsRealtime.subscribe(userId, (updatedHabits) => {
-      setHabits(updatedHabits)
+    const unsubscribe = habitsRealtime.subscribe(String(userId), (payload) => {
+      // Обновляем список привычек только при изменениях в таблице habits
+      if (payload.table === 'habits') {
+        // Перезагружаем привычки из базы данных
+        fetchHabits()
+      }
     })
 
     return () => {
-      subscription.unsubscribe()
+      unsubscribe()
     }
   }, [userId])
 
@@ -67,6 +71,33 @@ export default function HabitsPage() {
   }
 
   const handleCloseModal = () => {
+    setShowAddModal(false)
+    setEditingHabit(null)
+  }
+
+  const handleSaveHabit = (habit: any) => {
+    // Обновляем список привычек после сохранения
+    const fetchHabits = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('habits')
+          .select('*')
+          .eq('telegram_id', userId)
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          console.error('Error fetching habits:', error)
+          toast.error('Не удалось загрузить привычки')
+        } else {
+          setHabits(data || [])
+        }
+      } catch (error) {
+        console.error('Error:', error)
+        toast.error('Что-то пошло не так')
+      }
+    }
+
+    fetchHabits()
     setShowAddModal(false)
     setEditingHabit(null)
   }
@@ -146,8 +177,14 @@ export default function HabitsPage() {
         {/* Модальное окно для добавления/редактирования привычки */}
         {showAddModal && (
           <EditHabitModal
-            habit={editingHabit}
+            habit={editingHabit || {
+              id: '',
+              name: '',
+              category: 'water',
+              target_value: 0
+            }}
             onClose={handleCloseModal}
+            onSave={handleSaveHabit}
           />
         )}
       </SafeArea>
