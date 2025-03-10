@@ -8,7 +8,7 @@ import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { UserIdContext } from '@/app/contexts/UserContext'
 import { useContext } from 'react'
-import { MdViewList, MdGridView, MdDoneAll, MdPendingActions } from 'react-icons/md'
+import { MdViewList, MdGridView, MdDoneAll, MdPendingActions, MdRefresh } from 'react-icons/md'
 import { logger } from '@/utils/logger'
 import { TodoCard } from '@/app/components/TodoCard'
 import { EditTodoModal } from '@/app/components/EditTodoModal'
@@ -51,6 +51,22 @@ export default function TodoList({
           logger.error('Ошибка при загрузке тасков', { error })
           toast.error('Не удалось загрузить задачи')
           return
+        }
+
+        // Проверяем и логируем задачи, в которых могут быть расхождения с БД
+        const suspiciousTasks = data?.filter(task => {
+          // Проверка на несоответствие между UI и базой данных
+          const uiTask = todos.find(t => t.id === task.id);
+          return uiTask && uiTask.done !== task.done;
+        });
+        
+        if (suspiciousTasks && suspiciousTasks.length > 0) {
+          logger.warn('Обнаружены задачи с разным статусом в UI и БД:', { 
+            tasks: suspiciousTasks.map(t => ({ id: t.id, name: t.name, done_in_db: t.done })) 
+          });
+          
+          // Показываем уведомление, если есть проблемные задачи
+          toast.warning(`Обнаружены задачи с неправильным статусом (${suspiciousTasks.length}). Статус обновлен из БД.`);
         }
 
         logger.info('Таски успешно загружены', { count: data?.length })
@@ -165,14 +181,21 @@ export default function TodoList({
     ))
 
     try {
-      const { error } = await supabase
+      logger.debug('Отправка запроса на изменение статуса задачи:', { id, newStatus: !todo.done })
+      
+      const { error, data } = await supabase
         .from('todos')
         .update({ done: !todo.done })
         .eq('id', id)
+        .select('*')
 
       if (error) throw error
 
-      logger.info('Задача обновлена', { id, done: !todo.done })
+      logger.info('Задача обновлена в БД:', { 
+        id, 
+        done: !todo.done, 
+        response: data 
+      })
       
       // Показываем уведомление
       toast.success(
@@ -235,6 +258,53 @@ export default function TodoList({
     }
   }
 
+  // Функция для принудительной синхронизации с БД
+  const syncWithDatabase = async () => {
+    if (!userId) return;
+    
+    setIsLoading(true);
+    
+    try {
+      logger.info('Запуск принудительной синхронизации с БД');
+      
+      const { data, error } = await supabase
+        .from('todos')
+        .select('*')
+        .eq('telegram_id', userId)
+        .eq('is_habit', false)
+        .order('deadline', { ascending: true });
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Сравниваем данные из БД с локальным состоянием
+      const localTasks = [...todos];
+      const remoteTasks = data || [];
+      
+      const changedTasks = remoteTasks.filter(remoteTask => {
+        const localTask = localTasks.find(t => t.id === remoteTask.id);
+        return localTask && (localTask.done !== remoteTask.done);
+      });
+      
+      if (changedTasks.length > 0) {
+        logger.warn('Найдены задачи с несоответствием статуса:', changedTasks);
+        toast.success(`Синхронизировано задач: ${changedTasks.length}`);
+      } else {
+        toast.info('Все задачи уже синхронизированы');
+      }
+      
+      // Обновляем локальное состояние
+      setTodos(remoteTasks);
+      
+    } catch (error) {
+      logger.error('Ошибка при синхронизации с БД', error);
+      toast.error('Не удалось синхронизировать задачи');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Фильтры */}
@@ -246,6 +316,15 @@ export default function TodoList({
           title="Переключить вид списка"
         >
           {listView === 'vertical' ? <MdGridView className="w-5 h-5" /> : <MdViewList className="w-5 h-5" />}
+        </button>
+
+        {/* Кнопка синхронизации с БД */}
+        <button
+          onClick={syncWithDatabase}
+          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+          title="Синхронизировать с базой данных"
+        >
+          <MdRefresh className="w-5 h-5" />
         </button>
 
         {/* Фильтры */}

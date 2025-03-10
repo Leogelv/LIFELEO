@@ -8,12 +8,53 @@ import { Todo } from '@/types/todo'
 import { TaskCalendar } from '../components/tasks/TaskCalendar'
 import { motion } from 'framer-motion'
 import { Icon } from '@iconify/react'
+import { supabase } from '@/utils/supabase/client'
+import { useContext } from 'react'
+import { UserIdContext } from '@/app/contexts/UserContext'
+import { logger } from '@/utils/logger'
+import { toast } from 'sonner'
 
 type ViewMode = 'list' | 'calendar'
 
 export default function TasksPage() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [isLoading, setIsLoading] = useState(false)
+  const userId = useContext(UserIdContext)
+
+  // Загрузка задач напрямую из БД при инициализации и переключении вида
+  useEffect(() => {
+    const loadTasksFromDB = async () => {
+      if (!userId) return
+      
+      setIsLoading(true)
+      
+      try {
+        logger.info('Загрузка задач напрямую из БД')
+        
+        const { data, error } = await supabase
+          .from('todos')
+          .select('*')
+          .eq('telegram_id', userId)
+          .eq('is_habit', false)
+          .order('deadline', { ascending: true })
+          
+        if (error) {
+          throw error
+        }
+        
+        setTodos(data || [])
+        
+      } catch (error) {
+        logger.error('Ошибка при загрузке задач из БД', error)
+        toast.error('Не удалось загрузить задачи')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    loadTasksFromDB()
+  }, [userId, viewMode]) // Перезагрузка при переключении вида для синхронизации
 
   // Обработчик обновления задачи из календаря
   const handleTodoUpdate = (updatedTodo: Todo) => {
@@ -61,19 +102,30 @@ export default function TasksPage() {
             </div>
           </div>
           
-          {/* Контент в зависимости от выбранного вида */}
-          {viewMode === 'list' ? (
-            <TodoList 
-              initialTodos={todos} 
-              onTodosChange={setTodos} 
-              listView="vertical" 
-              hideCompleted={true} 
-            />
+          {/* Индикатор загрузки */}
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-8 h-8 border-2 border-t-transparent border-[#E8D9C5] rounded-full"
+              />
+            </div>
           ) : (
-            <TaskCalendar 
-              todos={todos} 
-              onTodoUpdate={handleTodoUpdate} 
-            />
+            /* Контент в зависимости от выбранного вида */
+            viewMode === 'list' ? (
+              <TodoList 
+                initialTodos={todos} 
+                onTodosChange={setTodos} 
+                listView="vertical" 
+                hideCompleted={true} 
+              />
+            ) : (
+              <TaskCalendar 
+                todos={todos} 
+                onTodoUpdate={handleTodoUpdate} 
+              />
+            )
           )}
         </div>
       </SafeArea>

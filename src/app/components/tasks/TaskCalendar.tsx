@@ -16,26 +16,6 @@ interface TaskCalendarProps {
   onTodoUpdate: (updatedTodo: Todo) => void
 }
 
-// Стили для кастомного скроллбара
-const customScrollbarStyles = `
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(232, 217, 197, 0.3);
-    border-radius: 20px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(232, 217, 197, 0.5);
-  }
-`;
-
 export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
   const { userId } = useTelegram()
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -249,9 +229,9 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
     )
     
     if (dayTasks.length === 0) return null
-
+    
     return (
-      <div className="flex flex-col gap-1.5 mt-1 max-h-[120px] overflow-y-auto custom-scrollbar">
+      <div className="flex flex-col gap-1.5 mt-2">
         {dayTasks.map(task => (
           <div
             key={task.id}
@@ -259,29 +239,31 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
             onDragStart={(e) => handleDragStart(task)}
             onDragEnd={(e) => handleDragEnd(e, task)}
             className={`
-              text-xs p-1.5 rounded-md cursor-grab active:cursor-grabbing group relative
-              transition-all duration-150
+              p-2 rounded-md cursor-move group relative
               ${task.done 
-                ? 'bg-emerald-400/10 text-emerald-300 line-through' 
+                ? 'bg-emerald-500/20 text-emerald-300 line-through' 
                 : isAfter(new Date(), new Date(task.deadline))
-                  ? 'bg-rose-400/10 text-rose-300'
-                  : 'bg-[#E8D9C5]/10 text-[#E8D9C5]/90 hover:bg-[#E8D9C5]/15'
+                  ? 'bg-rose-500/20 text-rose-300'
+                  : 'bg-[#E8D9C5]/10 text-[#E8D9C5]'
               }
+              transition-all hover:bg-[#E8D9C5]/20 
+              hover:scale-105 active:scale-95
               border border-transparent hover:border-[#E8D9C5]/20
+              shadow-sm hover:shadow-md
             `}
           >
-            <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+            <div className="flex items-center gap-1.5">
+              <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
                 task.done 
                   ? 'bg-emerald-400' 
                   : isAfter(new Date(), new Date(task.deadline))
                     ? 'bg-rose-400'
                     : 'bg-[#E8D9C5]/60'
               }`} />
-              <span className="truncate max-w-[calc(100%-40px)]" title={task.name}>{task.name}</span>
+              <span className="line-clamp-2 font-medium text-sm break-words">{task.name}</span>
               
               {/* Кнопки действий - появляются при наведении */}
-              <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 {/* Кнопка выполнения */}
                 <button
                   onClick={(e) => {
@@ -289,10 +271,10 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
                     e.preventDefault();
                     toggleTaskCompletion(task.id);
                   }}
-                  className="p-1 rounded-md bg-[#E8D9C5]/10 hover:bg-[#E8D9C5]/20 text-[#E8D9C5]"
+                  className="p-1.5 rounded-md bg-[#E8D9C5]/15 hover:bg-[#E8D9C5]/30 text-[#E8D9C5] backdrop-blur-sm"
                   title={task.done ? "Отметить как невыполненную" : "Отметить как выполненную"}
                 >
-                  <Icon icon="solar:check-circle-bold" className="w-3 h-3" />
+                  <Icon icon="solar:check-circle-bold" className="w-3.5 h-3.5" />
                 </button>
                 
                 {/* Кнопка переноса на сегодня */}
@@ -302,10 +284,10 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
                     e.preventDefault();
                     rescheduleTaskToToday(task.id);
                   }}
-                  className="p-1 rounded-md bg-[#E8D9C5]/10 hover:bg-[#E8D9C5]/20 text-[#E8D9C5]"
+                  className="p-1.5 rounded-md bg-[#E8D9C5]/15 hover:bg-[#E8D9C5]/30 text-[#E8D9C5] backdrop-blur-sm"
                   title="Перенести на сегодня +2 часа"
                 >
-                  <Icon icon="solar:calendar-today-bold" className="w-3 h-3" />
+                  <Icon icon="solar:calendar-today-bold" className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -317,11 +299,8 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
 
   return (
     <div className="bg-[#1A1A1A] rounded-xl border border-[#E8D9C5]/10 overflow-hidden">
-      {/* Добавляем стили для скроллбара */}
-      <style jsx global>{customScrollbarStyles}</style>
-      
       {/* Заголовок календаря */}
-      <div className="p-4 border-b border-[#E8D9C5]/10 flex items-center justify-between">
+      <div className="p-4 border-b border-[#E8D9C5]/10 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold text-[#E8D9C5]">
             {view === 'month' 
@@ -385,17 +364,34 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
         </div>
       </div>
       
-      {/* Сетка календаря */}
-      <div className={`grid grid-cols-7 gap-px bg-[#E8D9C5]/5`}>
-        {/* Названия дней недели */}
+      {/* Дни недели */}
+      <div className="grid grid-cols-7 border-b border-[#E8D9C5]/10">
         {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day, index) => (
-          <div key={day} className="p-2 text-center text-[#E8D9C5]/70 font-medium bg-[#1A1A1A]">
+          <div 
+            key={day} 
+            className={`py-3 text-center text-sm font-medium ${
+              index >= 5 ? 'text-[#E8D9C5]/40' : 'text-[#E8D9C5]/60'
+            }`}
+          >
             {day}
           </div>
         ))}
+      </div>
+      
+      {/* Сетка календаря */}
+      <div className={`grid grid-cols-7 ${view === 'month' ? 'grid-rows-6' : 'grid-rows-1'}`}>
+        {view === 'month' && (
+          // Пустые ячейки до начала месяца
+          Array.from({ length: new Date(monthStart).getDay() === 0 ? 6 : new Date(monthStart).getDay() - 1 }).map((_, index) => (
+            <div 
+              key={`empty-start-${index}`} 
+              className="border-b border-r border-[#E8D9C5]/5 p-3 min-h-[120px] md:min-h-[140px]"
+            />
+          ))
+        )}
         
         {/* Дни месяца/недели */}
-        {days.map((day, i) => {
+        {days.map((day) => {
           const isCurrentMonth = isSameMonth(day, currentDate)
           const isSelected = isSameDay(day, currentDate)
           const isToday_ = isToday(day)
@@ -403,31 +399,44 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
           const isHovered = hoveredDate && isSameDay(day, hoveredDate)
           
           return (
-            <div
-              key={i}
+            <div 
+              key={day.toISOString()}
               onDragOver={(e) => handleDragOver(e, day)}
               onDrop={(e) => handleDrop(e, day)}
               className={`
-                relative min-h-[120px] p-2 bg-[#1A1A1A]
-                transition-colors duration-150
-                ${isHovered ? 'bg-[#E8D9C5]/5' : ''}
-                ${!isCurrentMonth && view === 'month' ? 'opacity-40' : ''}
-                ${isToday_ ? 'ring-1 ring-[#E8D9C5]/30 bg-[#E8D9C5]/5' : ''}
+                relative border-b border-r border-[#E8D9C5]/5 p-3 
+                min-h-[120px] md:min-h-[140px] 
+                transition-colors duration-200
+                ${isHovered ? 'bg-[#E8D9C5]/8' : ''}
+                ${isSelected ? 'bg-[#E8D9C5]/3' : ''}
+                ${!isCurrentMonth && view === 'month' ? 'opacity-30' : ''}
+                hover:bg-[#E8D9C5]/5
               `}
             >
-              <div className="flex justify-between items-start">
-                <span className={`
-                  inline-flex justify-center items-center w-6 h-6 rounded-full text-sm
-                  ${isToday_ ? 'bg-[#E8D9C5] text-[#1A1A1A] font-medium' : 'text-[#E8D9C5]/80'}
-                `}>
-                  {format(day, 'd')}
-                </span>
+              {/* Индикатор текущего дня */}
+              {isToday_ && (
+                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500" />
+              )}
+              
+              {/* Номер дня */}
+              <div className={`
+                text-sm font-medium mb-2 flex justify-between items-center
+                ${isSelected ? 'text-rose-400' : ''}
+                ${isToday_ ? 'text-[#E8D9C5] font-semibold' : ''}
+                ${isPast ? 'text-[#E8D9C5]/40' : 'text-[#E8D9C5]/80'}
+              `}>
+                {format(day, 'd')}
                 
-                {/* Индикатор количества задач */}
+                {/* Добавляем маленький индикатор, если есть задачи */}
                 {todos.filter(todo => isSameDay(new Date(todo.deadline), day)).length > 0 && (
-                  <span className="text-xs text-[#E8D9C5]/60">
-                    {todos.filter(todo => isSameDay(new Date(todo.deadline), day)).length} задач
-                  </span>
+                  <div className="flex gap-0.5">
+                    {todos.filter(todo => isSameDay(new Date(todo.deadline), day) && todo.done).length > 0 && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    )}
+                    {todos.filter(todo => isSameDay(new Date(todo.deadline), day) && !todo.done).length > 0 && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#E8D9C5]/60" />
+                    )}
+                  </div>
                 )}
               </div>
               
@@ -436,6 +445,16 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
             </div>
           )
         })}
+        
+        {view === 'month' && (
+          // Пустые ячейки после конца месяца
+          Array.from({ length: 42 - (new Date(monthStart).getDay() === 0 ? 6 : new Date(monthStart).getDay() - 1) - monthDays.length }).map((_, index) => (
+            <div 
+              key={`empty-end-${index}`} 
+              className="border-b border-r border-[#E8D9C5]/5 p-3 min-h-[120px] md:min-h-[140px]"
+            />
+          ))
+        )}
       </div>
       
       {/* Индикатор загрузки */}
