@@ -36,7 +36,6 @@ export default function TasksPage() {
           .from('todos')
           .select('*')
           .eq('telegram_id', userId)
-          .eq('is_habit', false)
           .order('deadline', { ascending: true })
           
         if (error) {

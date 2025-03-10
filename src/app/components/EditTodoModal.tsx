@@ -171,7 +171,6 @@ export function EditTodoModal({ todo, onClose, onSave }: EditTodoModalProps) {
         deadline: editingTodo.deadline,
         notes: editingTodo.notes,
         category: editingTodo.category,
-        repeat_type: editingTodo.repeat_type,
         repeat_ends: editingTodo.repeat_ends
       })
       .eq('id', editingTodo.id)

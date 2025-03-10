@@ -44,7 +44,6 @@ export default function TodoList({
           .from('todos')
           .select('*')
           .eq('telegram_id', userId)
-          .eq('is_habit', false)
           .order('deadline', { ascending: true })
 
         if (error) {
@@ -86,12 +85,12 @@ export default function TodoList({
       
       // Подписываемся на изменения через realtime менеджер
       unsubscribe = realtime.subscribe(`todos-${userId}`, (payload) => {
-        // Проверяем что это наш таск (не хэбит и наш userId)
+        // Проверяем что это наш таск и наш userId
         const isOurTask = (
-          (payload.new && 'telegram_id' in payload.new && 'is_habit' in payload.new && 
-           payload.new.telegram_id === userId && payload.new.is_habit === false) ||
-          (payload.old && 'telegram_id' in payload.old && 'is_habit' in payload.old && 
-           payload.old.telegram_id === userId && payload.old.is_habit === false)
+          (payload.new && 'telegram_id' in payload.new && 
+           payload.new.telegram_id === userId) ||
+          (payload.old && 'telegram_id' in payload.old && 
+           payload.old.telegram_id === userId)
         )
 
         if (!isOurTask) return
@@ -271,7 +270,6 @@ export default function TodoList({
         .from('todos')
         .select('*')
         .eq('telegram_id', userId)
-        .eq('is_habit', false)
         .order('deadline', { ascending: true });
         
       if (error) {

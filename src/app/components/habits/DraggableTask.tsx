@@ -16,7 +16,7 @@ interface DraggableTaskProps {
 
 export function DraggableTask({ task, onMove, onDrag, onDragEnd }: DraggableTaskProps) {
   const isOverdue = !task.done && isAfter(new Date(), new Date(task.deadline))
-  const [showComment, setShowComment] = useState(false)
+  const [showNotes, setShowNotes] = useState(false)
 
   return (
     <motion.div
@@ -54,17 +54,17 @@ export function DraggableTask({ task, onMove, onDrag, onDragEnd }: DraggableTask
         <span className="break-words" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
           {task.name}
         </span>
-        {task.comment && (
+        {task.notes && (
           <button
             onClick={(e) => {
               e.stopPropagation()
-              setShowComment(!showComment)
+              setShowNotes(!showNotes)
             }}
             className="ml-auto"
           >
             <Icon 
               icon="solar:notes-outline" 
-              className={`w-3 h-3 transition-colors ${showComment ? 'text-[#E8D9C5]' : 'text-[#E8D9C5]/60'}`} 
+              className={`w-3 h-3 transition-colors ${showNotes ? 'text-[#E8D9C5]' : 'text-[#E8D9C5]/60'}`} 
             />
           </button>
         )}
@@ -72,14 +72,14 @@ export function DraggableTask({ task, onMove, onDrag, onDragEnd }: DraggableTask
       
       {/* Заметка */}
       <AnimatePresence>
-        {showComment && task.comment && (
+        {showNotes && task.notes && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="text-[10px] text-[#E8D9C5]/60 mt-1 border-t border-[#E8D9C5]/10 pt-1"
           >
-            {task.comment}
+            {task.notes}
           </motion.div>
         )}
       </AnimatePresence>

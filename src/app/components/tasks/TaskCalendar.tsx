@@ -80,8 +80,7 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
       const { error } = await supabase
         .from('todos')
         .update({ 
-          deadline: newDate.toISOString(),
-          updated_at: new Date().toISOString()
+          deadline: newDate.toISOString()
         })
         .eq('id', taskId)
         .eq('telegram_id', userId)
@@ -124,8 +123,7 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
       const { error } = await supabase
         .from('todos')
         .update({ 
-          done: !task.done,
-          updated_at: new Date().toISOString()
+          done: !task.done
         })
         .eq('id', taskId)
         .eq('telegram_id', userId)
@@ -170,8 +168,7 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
       const { error } = await supabase
         .from('todos')
         .update({ 
-          deadline: newDeadline.toISOString(),
-          updated_at: new Date().toISOString()
+          deadline: newDeadline.toISOString()
         })
         .eq('id', taskId)
         .eq('telegram_id', userId)

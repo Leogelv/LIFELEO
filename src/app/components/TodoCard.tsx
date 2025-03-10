@@ -208,18 +208,6 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete, listView }: TodoCar
               <span>{completedSubtasksCount} из {subtasksCount} подзадач</span>
             </div>
           )}
-
-          {/* Повторение */}
-          {todo.repeat_type && (
-            <div className="flex items-center gap-2 text-sm text-white/60">
-              <MdOutlineRepeat className="w-4 h-4 shrink-0" />
-              <span>
-                {todo.repeat_type === 'daily' ? 'Ежедневно' : 
-                 todo.repeat_type === 'weekly' ? 'Еженедельно' : 
-                 'Ежемесячно'}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Кнопки действий */}

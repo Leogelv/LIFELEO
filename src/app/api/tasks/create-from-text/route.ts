@@ -66,17 +66,14 @@ export async function POST(request: Request) {
     const { data, error } = await supabase
       .from('todos')
       .insert({
-        id: uuidv4(),
         name: analysis.task.name,
         deadline: analysis.task.deadline,
         telegram_id: telegram_id,
         done: false,
-        comment: analysis.task.notes,
+        notes: analysis.task.notes,
         category: analysis.task.category,
         tags: analysis.task.tags,
-        is_habit: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        created_at: new Date().toISOString()
       })
       .select()
 
