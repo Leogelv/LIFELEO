@@ -93,7 +93,7 @@ export function getUserIdFromUrl(): number {
 
 // Новая функция для извлечения имени пользователя из URL
 export function getUsernameFromUrl(): string {
-  if (typeof window === 'undefined') return 'Пользователь';
+  if (typeof window === 'undefined') return ENV_USER_NAME;
   
   try {
     const urlParams = new URLSearchParams(window.location.search);
@@ -112,12 +112,12 @@ export function getUsernameFromUrl(): string {
       return nameParam;
     }
     
-    // Не нашли имя в URL, возвращаем дефолтное
-    console.log('⚠️ Имя пользователя не найдено в URL, используем дефолтное');
-    return 'Пользователь';
+    // Не нашли имя в URL, возвращаем из .env.local
+    console.log('⚠️ Имя пользователя не найдено в URL, используем имя из .env.local:', ENV_USER_NAME);
+    return ENV_USER_NAME;
   } catch (error) {
     console.error('❌ Ошибка при чтении имени из URL:', error);
-    return 'Пользователь';
+    return ENV_USER_NAME;
   }
 }
 

@@ -134,6 +134,9 @@ interface Utility {
   icon: string;
 }
 
+// Получаем значения из .env.local
+const ENV_USER_NAME = process.env.NEXT_PUBLIC_USER_NAME || 'Леонид'
+
 // Оптимизированный компонент секции
 const SectionCard = ({ section, priority = false }: { section: Section, priority?: boolean }) => (
   <Link href={`/${section.id}`} className="block" prefetch={false}>
@@ -186,9 +189,19 @@ export default function Home() {
   const [mounted, setMounted] = useState(false)
   const [isLowEndDevice, setIsLowEndDevice] = useState(false)
   
-  // Используем имя пользователя из контекста в приоритете
-  const effectiveUsername = contextUsername !== 'Пользователь' ? contextUsername : user.username
+  // Используем имя из контекста, затем из Telegram, затем из .env.local
+  const effectiveUsername = 
+    contextUsername !== 'Пользователь' ? contextUsername : 
+    user.username !== 'Пользователь' && user.username !== 'Гость' ? user.username : 
+    ENV_USER_NAME;
   
+  useEffect(() => {
+    console.log('🧪 Home: contextUsername =', contextUsername);
+    console.log('🧪 Home: user.username =', user.username);
+    console.log('🧪 Home: ENV_USER_NAME =', ENV_USER_NAME);
+    console.log('🧪 Home: используем effectiveUsername =', effectiveUsername);
+  }, [contextUsername, user.username, effectiveUsername]);
+
   // Оптимизация: предотвращаем ненужные ререндеры
   useEffect(() => {
     setMounted(true)
