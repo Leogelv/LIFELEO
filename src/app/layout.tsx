@@ -38,8 +38,53 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Загружаем скрипт Telegram WebApp для совместимости */}
-        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+        {/* Загружаем скрипт Telegram WebApp для совместимости, но только в Telegram */}
+        <Script id="check-telegram-env">
+          {`
+            // Определяем, находимся ли мы в Telegram
+            function isTelegramEnvironment() {
+              if (typeof window === 'undefined') return false;
+              
+              // Проверяем URL параметры от Telegram
+              const hasTelegramParams = window.location.href.includes('tgWebAppData') || 
+                                        window.location.href.includes('tgWebAppPlatform');
+              
+              // Проверяем мобильное приложение через User-Agent
+              const userAgent = window.navigator.userAgent || '';
+              const isTelegramUserAgent = userAgent.includes('Telegram') || userAgent.includes('TelegramBot');
+              
+              // Проверяем URL параметр для принудительного отключения
+              const urlParams = new URLSearchParams(window.location.search);
+              const forceWeb = urlParams.get('force_web') === 'true';
+              
+              // Если явно указано использовать веб-версию, то не загружаем скрипт
+              if (forceWeb) {
+                console.log('🌐 Принудительно использую веб-версию (force_web=true)');
+                return false;
+              }
+              
+              console.log('📱 Определение окружения в layout:', { 
+                hasTelegramParams, 
+                isTelegramUserAgent,
+                userAgent,
+                forceWeb
+              });
+              
+              return hasTelegramParams || isTelegramUserAgent;
+            }
+            
+            // Если мы в Telegram, динамически добавляем скрипт
+            if (isTelegramEnvironment()) {
+              console.log('🔄 Загружаю Telegram WebApp скрипт...');
+              const script = document.createElement('script');
+              script.src = 'https://telegram.org/js/telegram-web-app.js';
+              script.async = true;
+              document.head.appendChild(script);
+            } else {
+              console.log('🌐 Не в Telegram, не загружаю Telegram WebApp скрипт');
+            }
+          `}
+        </Script>
       </head>
       <body className={inter.className}>
         <UserIdProvider>
