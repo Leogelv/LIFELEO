@@ -17,7 +17,20 @@ import { Icon } from '@iconify/react'
 export default function HabitsPage() {
   const { userId: telegramUserId } = useTelegram()
   const userId = useUserId()
-  const effectiveUserId = userId || telegramUserId
+  
+  // Пытаемся получить userId напрямую из URL в крайнем случае
+  const getDirectUserId = () => {
+    if (typeof window === 'undefined') return 0;
+    
+    const urlMatch = window.location.href.match(/(\d{6,})/);
+    if (urlMatch) {
+      return parseInt(urlMatch[0], 10);
+    }
+    return 0;
+  }
+  
+  const directUserId = getDirectUserId();
+  const effectiveUserId = userId || telegramUserId || directUserId || 375634162;
   
   const [habits, setHabits] = useState<Habit[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -27,8 +40,9 @@ export default function HabitsPage() {
   useEffect(() => {
     console.log('🧪 HabitsPage: userId из контекста =', userId);
     console.log('🧪 HabitsPage: userId из telegram =', telegramUserId);
+    console.log('🧪 HabitsPage: directUserId =', directUserId);
     console.log('🧪 HabitsPage: используем effectiveUserId =', effectiveUserId);
-  }, [userId, telegramUserId, effectiveUserId]);
+  }, [userId, telegramUserId, directUserId, effectiveUserId]);
 
   useEffect(() => {
     const fetchHabits = async () => {

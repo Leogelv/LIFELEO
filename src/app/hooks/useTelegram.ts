@@ -18,14 +18,25 @@ export function getUserIdFromUrl(): number {
   if (typeof window === 'undefined') return 0;
   
   try {
+    // Сначала проверяем URL-параметры через URLSearchParams
     const urlParams = new URLSearchParams(window.location.search);
     
     // Проверяем все возможные варианты названия параметров
     let userIdParam = urlParams.get('user_id') || urlParams.get('userid') || urlParams.get('userId') || urlParams.get('telegram_id');
     
+    // Явно логируем начальные результаты поиска
+    console.log('🔎 Поиск в URL параметрах:', { 
+      user_id: urlParams.get('user_id'),
+      userid: urlParams.get('userid'),
+      userId: urlParams.get('userId'),
+      telegram_id: urlParams.get('telegram_id')
+    });
+    console.log('🔎 Полный URL:', window.location.href);
+    
     // Проверяем случай, когда весь URL после "?" это просто userid
     if (!userIdParam && window.location.href.includes('?')) {
       const rawQuery = window.location.href.split('?')[1];
+      console.log('🔎 Проверка rawQuery:', rawQuery);
       if (rawQuery && !rawQuery.includes('=')) {
         userIdParam = rawQuery;
       }
@@ -34,14 +45,20 @@ export function getUserIdFromUrl(): number {
     // Проверяем случай, когда URL содержит хеш-фрагмент с userid
     if (!userIdParam && window.location.href.includes('#')) {
       const hashFragment = window.location.href.split('#')[1];
+      console.log('🔎 Проверка hashFragment:', hashFragment);
       if (hashFragment && !isNaN(parseInt(hashFragment))) {
         userIdParam = hashFragment;
       }
     }
     
+    // Логируем найденный параметр перед обработкой
+    console.log('🔎 Найденный userIdParam перед обработкой:', userIdParam);
+    
     if (userIdParam) {
       // Очищаем от возможных нечисловых символов
       const cleanedParam = userIdParam.replace(/[^0-9]/g, '');
+      console.log('🔎 Очищенный параметр:', cleanedParam);
+      
       const parsedUserId = parseInt(cleanedParam, 10);
       
       if (!isNaN(parsedUserId)) {
@@ -51,7 +68,17 @@ export function getUserIdFromUrl(): number {
     }
     
     // Используем дефолтный ID, если ничего не найдено
-    console.log('⚠️ userId не найден в URL, используем дефолтный');
+    console.log('⚠️ userId не найден в URL, проверяем весь URL напрямую:', window.location.href);
+    
+    // Последняя попытка - ищем любое число в URL
+    const urlNumberMatch = window.location.href.match(/(\d{6,})/);
+    if (urlNumberMatch) {
+      const extractedNumber = parseInt(urlNumberMatch[0], 10);
+      console.log('🔎 Найдено число в URL:', extractedNumber);
+      return extractedNumber;
+    }
+
+    console.log('❌ Не удалось найти userId в URL, использую дефолтный ID');
     return 375634162; // Дефолтный ID для тестирования
   } catch (error) {
     console.error('❌ Ошибка при чтении userId из URL:', error);
