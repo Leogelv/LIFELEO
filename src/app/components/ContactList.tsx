@@ -10,7 +10,8 @@ import { Tab } from '@headlessui/react'
 import { toast } from 'sonner'
 import { getContacts } from '@/app/actions/contacts'
 import { Icon } from '@iconify/react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ContactCard } from './ContactCard'
 
 declare global {
   interface Window {
@@ -70,6 +71,8 @@ export function ContactList() {
   const [refreshing, setRefreshing] = useState(false)
   const [showAnalyzedOnly, setShowAnalyzedOnly] = useState(false)
   const [selectedTab, setSelectedTab] = useState(0)
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   useEffect(() => {
     logger.info('ContactList компонент инициализирован')
@@ -249,6 +252,47 @@ export function ContactList() {
       return firstNameMatch || lastNameMatch || usernameMatch || telegramIdMatch;
     });
 
+  // Функция для обработки клика по контакту
+  const handleContactClick = (contact: Contact) => {
+    logger.info('Открытие карточки контакта:', { userId: contact.user_id, name: contact.first_name })
+    setSelectedContact(contact)
+  }
+
+  // Функция для закрытия карточки контакта
+  const handleCloseCard = () => {
+    setSelectedContact(null)
+  }
+
+  // Функция для анализа контакта
+  const handleAnalyzeContact = async () => {
+    if (!selectedContact) return
+    
+    setIsAnalyzing(true)
+    
+    try {
+      // Здесь логика вызова API анализа контакта
+      const response = await fetch(`/api/contacts/analyze?userId=${selectedContact.user_id}`, {
+        method: 'POST'
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      toast.success('Анализ контакта запущен', {
+        description: 'Результаты будут доступны через несколько минут'
+      })
+      
+      // Перезагрузка данных контакта
+      fetchContacts()
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка'
+      toast.error(`Не удалось запустить анализ: ${errorMessage}`)
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-40">
@@ -344,14 +388,18 @@ export function ContactList() {
         )}
         
         {filteredContacts.map(contact => (
-          <div key={contact.user_id} className="flex items-center space-x-2">
+          <div 
+            key={contact.user_id} 
+            onClick={() => handleContactClick(contact)}
+            className="flex items-center space-x-2 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+          >
             <div className={`flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br ${getRandomGradient()} 
               shadow-lg flex items-center justify-center transform hover:scale-105 transition-transform duration-200`}>
               <span className="text-lg font-medium text-white">
                 {contact.first_name[0]}
               </span>
             </div>
-            <div className="ml-4">
+            <div className="ml-4 flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-200">
                   {contact.first_name} {contact.last_name}
@@ -379,6 +427,27 @@ export function ContactList() {
           </div>
         ))}
       </div>
+      
+      {/* Модальное окно с карточкой контакта */}
+      <AnimatePresence>
+        {selectedContact && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="w-full max-w-md"
+            >
+              <ContactCard 
+                contact={selectedContact} 
+                onClose={handleCloseCard} 
+                onAnalyze={handleAnalyzeContact}
+                isAnalyzing={isAnalyzing}
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 } 

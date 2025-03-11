@@ -16,7 +16,8 @@ import { toast } from 'sonner'
 import { v4 as uuidv4 } from 'uuid'
 import { format, addHours, addDays } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { MdOutlineCalendarToday, MdAdd, MdOutlineAccessTime, MdRefresh, MdCategory, MdOutlineSubtitles, MdOutlineNotes, MdCheck, MdClose, MdDelete } from 'react-icons/md'
+import { MdOutlineCalendarToday, MdAdd, MdOutlineAccessTime, MdRefresh, MdCategory, MdOutlineSubtitles, MdOutlineNotes, MdCheck, MdClose, MdDelete, MdArrowBack } from 'react-icons/md'
+import Link from 'next/link'
 
 type ViewMode = 'list' | 'calendar'
 
@@ -261,6 +262,18 @@ export default function TasksPage() {
           {/* Заголовок и переключатель вида */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
+              {/* Кнопка навигации назад */}
+              <Link href="/">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-2 rounded-full bg-[#E8D9C5]/10 hover:bg-[#E8D9C5]/20 text-[#E8D9C5] mr-2"
+                  title="Назад на главную"
+                >
+                  <MdArrowBack className="w-5 h-5" />
+                </motion.button>
+              </Link>
+              
               <h1 className="text-2xl font-bold text-[#E8D9C5]">Лайф-Кайф</h1>
               
               {/* Кнопка обновления данных */}

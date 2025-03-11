@@ -38,16 +38,32 @@ export function useTelegram() {
         if (typeof window === 'undefined') return false;
         
         const urlParams = new URLSearchParams(window.location.search)
-        // Поддерживаем оба варианта: user_id и userid
-        const userIdParam = urlParams.get('user_id') || urlParams.get('userid')
+        
+        // Улучшаем поддержку различных форматов параметров
+        let userIdParam = urlParams.get('user_id') || urlParams.get('userid') || urlParams.get('userId')
+        
+        // Также проверяем, не является ли весь URL одним параметром (иногда бывает такое)
+        if (!userIdParam && window.location.href.includes('?')) {
+          const rawQuery = window.location.href.split('?')[1]
+          if (rawQuery && !rawQuery.includes('=')) {
+            userIdParam = rawQuery
+          }
+        }
         
         if (userIdParam) {
           const parsedUserId = parseInt(userIdParam, 10)
           if (!isNaN(parsedUserId)) {
             console.log('Вход по URL-параметру user_id:', parsedUserId)
             setUserId(parsedUserId)
-            setUserName(urlParams.get('name') || 'Пользователь')
-            setUserPhoto(urlParams.get('photo') || '')
+            
+            // Установка имени пользователя, с проверкой
+            const nameParam = urlParams.get('name') || urlParams.get('username') || 'Пользователь'
+            setUserName(nameParam)
+            
+            // Установка фото, с проверкой
+            const photoParam = urlParams.get('photo') || urlParams.get('photo_url') || ''
+            setUserPhoto(photoParam)
+            
             setIsInitialized(true)
             return true
           }
