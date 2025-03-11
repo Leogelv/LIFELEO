@@ -13,6 +13,11 @@ const defaultUser = {
   photoUrl: ''
 }
 
+// Получаем значения из .env.local
+const ENV_USER_ID = process.env.NEXT_PUBLIC_USER_ID ? parseInt(process.env.NEXT_PUBLIC_USER_ID) : 375634162
+const ENV_USER_NAME = process.env.NEXT_PUBLIC_USER_NAME || 'Леонид'
+const ENV_PASSWORD = process.env.NEXT_PUBLIC_SIXDIGIT_PASSWORD || '323800'
+
 // Улучшенная функция для извлечения userId из URL
 export function getUserIdFromUrl(): number {
   if (typeof window === 'undefined') return 0;
@@ -125,10 +130,18 @@ export function useTelegram() {
   const [isTelegramWebApp, setIsTelegramWebApp] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [isPasswordVerified, setIsPasswordVerified] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
 
   // Проверяем, что мы на клиенте
   useEffect(() => {
     setIsClient(true)
+    
+    // Проверяем, был ли пароль уже введен
+    if (typeof window !== 'undefined') {
+      const verified = localStorage.getItem('passwordVerified') === 'true'
+      setIsPasswordVerified(verified)
+    }
   }, [])
 
   useEffect(() => {
@@ -250,12 +263,18 @@ export function useTelegram() {
       // Если не в Telegram, пробуем получить данные из URL
       const isUrlParamsFound = checkUrlParams()
       
-      // Если и в URL нет данных, используем дефолтные значения
+      // Если и в URL нет данных, используем значения из .env.local
       if (!isUrlParamsFound) {
-        console.log('Используем дефолтный ID для входа')
-        setUserId(375634162) // Дефолтный ID для тестирования
-        setUserName('Гость')
-        setIsInitialized(true)
+        console.log('Используем данные из .env.local для входа')
+        setUserId(ENV_USER_ID)
+        setUserName(ENV_USER_NAME)
+        
+        // Показываем модальное окно с паролем, если пароль еще не был введен
+        if (!isPasswordVerified) {
+          setShowPasswordModal(true)
+        } else {
+          setIsInitialized(true)
+        }
       }
     }
 
@@ -267,7 +286,14 @@ export function useTelegram() {
         }
       }
     }
-  }, [isClient, isInitialized])
+  }, [isClient, isInitialized, isPasswordVerified])
+
+  // Функция для обработки успешного ввода пароля
+  const handlePasswordSuccess = () => {
+    setIsPasswordVerified(true)
+    setShowPasswordModal(false)
+    setIsInitialized(true)
+  }
 
   // Создаем объект user для удобства
   const user = {
@@ -287,6 +313,9 @@ export function useTelegram() {
     isTelegramWebApp,
     user,
     isInitialized,
-    isClient
+    isClient,
+    showPasswordModal,
+    handlePasswordSuccess,
+    ENV_PASSWORD
   }
 } 

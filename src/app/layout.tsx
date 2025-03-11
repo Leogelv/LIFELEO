@@ -6,6 +6,7 @@ import { NavigationLoader } from './components/ui/NavigationLoader'
 import LogViewer from './components/LogViewer'
 import Script from 'next/script'
 import { UserIdProvider } from './contexts/UserIdContext'
+import { PasswordProtection } from './components/PasswordProtection'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -43,7 +44,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <UserIdProvider>
           <NavigationLoader />
-          {children}
+          <PasswordProtection>
+            {children}
+          </PasswordProtection>
           <Toaster 
             position="top-center"
             toastOptions={{
