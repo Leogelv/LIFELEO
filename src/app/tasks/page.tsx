@@ -16,7 +16,7 @@ import { toast } from 'sonner'
 import { v4 as uuidv4 } from 'uuid'
 import { format, addHours, addDays } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { MdOutlineCalendarToday, MdAdd, MdOutlineAccessTime } from 'react-icons/md'
+import { MdOutlineCalendarToday, MdAdd, MdOutlineAccessTime, MdRefresh } from 'react-icons/md'
 
 type ViewMode = 'list' | 'calendar'
 
@@ -24,10 +24,18 @@ export default function TasksPage() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [isLoading, setIsLoading] = useState(false)
+  const [forceRefresh, setForceRefresh] = useState(0) // Счетчик для принудительного обновления
   const userId = useContext(UserIdContext)
   const [taskName, setTaskName] = useState('')
   const [deadline, setDeadline] = useState<Date>(new Date())
   const nameInputRef = useRef<HTMLInputElement>(null)
+
+  // Функция принудительного обновления
+  const handleForceRefresh = () => {
+    toast.info('Очистка кеша и синхронизация с базой...')
+    logger.info('Принудительное обновление данных из базы и очистка кеша')
+    setForceRefresh(prev => prev + 1) // Инкрементируем счетчик для триггера useEffect
+  }
 
   // Загрузка задач напрямую из БД при инициализации и переключении вида
   useEffect(() => {
@@ -52,8 +60,14 @@ export default function TasksPage() {
         // Фиксируем статус done, чтобы он строго был boolean
         const fixedTodos = data?.map(task => ({
           ...task,
-          done: Boolean(task.done) // Строгое приведение к boolean
+          done: task.done === true // Строгое приведение к boolean через прямое сравнение
         })) || []
+        
+        // Логируем данные для отладки
+        logger.info('Получены задачи из БД:', { 
+          count: fixedTodos.length,
+          tasks: fixedTodos.map(t => ({ id: t.id, name: t.name, done: t.done, typeOfDone: typeof t.done }))
+        })
         
         // Проверяем и логируем неправильные задачи
         const suspiciousTasks = fixedTodos.filter(task => {
@@ -78,7 +92,7 @@ export default function TasksPage() {
     }
     
     loadTasksFromDB()
-  }, [userId, viewMode]) // Перезагрузка при переключении вида для синхронизации
+  }, [userId, viewMode, forceRefresh]) // Добавляем forceRefresh в зависимости
 
   // Обработчик обновления задачи из календаря
   const handleTodoUpdate = (updatedTodo: Todo) => {
@@ -149,6 +163,17 @@ export default function TasksPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-[#E8D9C5]">Лайф-Кайф</h1>
+              
+              {/* Кнопка обновления данных */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleForceRefresh}
+                className="p-2 rounded-full bg-[#E8D9C5]/10 hover:bg-[#E8D9C5]/20 text-[#E8D9C5]"
+                title="Сбросить кеш и синхронизировать с базой"
+              >
+                <MdRefresh className="w-5 h-5" />
+              </motion.button>
             </div>
             
             <div className="flex bg-[#2A2A2A] rounded-lg p-1">

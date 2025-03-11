@@ -35,6 +35,15 @@ export default function TodoList({
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null)
   const userId = useContext(UserIdContext)
 
+  // Обновлять наши задачи, когда меняются входные задачи
+  useEffect(() => {
+    logger.info('TodoList: обновление входных задач', { 
+      count: initialTodos.length,
+      tasks: initialTodos.map(t => ({ id: t.id, name: t.name, done: t.done, typeOfDone: typeof t.done }))
+    });
+    setTodos(initialTodos);
+  }, [initialTodos]);
+
   // Загрузка тасков
   useEffect(() => {
     const fetchTodos = async () => {
@@ -169,7 +178,7 @@ export default function TodoList({
 
   // Фильтруем и сортируем задачи на основе строгой проверки на done
   const filteredTodos = sortTodos(todos.filter(todo => {
-    // Проверяем, что значение done точно приведено к boolean
+    // Проверяем, что значение done точно приведено к boolean через прямое сравнение
     const isDone = todo.done === true;
     
     // Логируем задачи с неожиданным типом поля done
@@ -186,7 +195,14 @@ export default function TodoList({
       return !isDone; // Показываем только невыполненные
     }
     return true; // Показываем все
-  }))
+  }));
+
+  // Показываем отфильтрованные задачи
+  logger.debug('TodoList: отфильтрованные задачи для отображения', {
+    allCount: todos.length,
+    filteredCount: filteredTodos.length,
+    filtered: filteredTodos.map(t => ({ id: t.id, name: t.name, done: t.done }))
+  });
 
   // Обработка выполнения задачи
   const handleToggle = async (id: string) => {
@@ -203,7 +219,8 @@ export default function TodoList({
       name: todo.name,
       currentDone,
       newDone,
-      originalDone: todo.done
+      originalDone: todo.done,
+      typeOfOriginalDone: typeof todo.done
     });
 
     // Оптимистичное обновление
@@ -214,19 +231,42 @@ export default function TodoList({
     try {
       logger.debug('Отправка запроса на изменение статуса задачи:', { id, newStatus: newDone })
       
+      // Проверяем что sent_done реально boolean
+      const sent_done = Boolean(newDone);
+      
       const { error, data } = await supabase
         .from('todos')
-        .update({ done: newDone })
+        .update({ done: sent_done })
         .eq('id', id)
         .select('*')
 
       if (error) throw error
 
-      logger.info('Задача обновлена в БД:', { 
-        id, 
-        done: newDone, 
-        response: data 
-      })
+      // Проверяем возвращенные данные
+      if (data && data.length > 0) {
+        const returnedDone = data[0].done;
+        logger.info('Задача обновлена в БД:', { 
+          id, 
+          done: newDone, 
+          returnedDone: returnedDone,
+          typeOfReturnedDone: typeof returnedDone,
+          match: (returnedDone === true) === newDone,
+          response: data 
+        });
+        
+        if ((returnedDone === true) !== newDone) {
+          logger.warn('Несоответствие статуса после обновления в БД:', {
+            id,
+            requested: newDone,
+            received: returnedDone
+          });
+          
+          // Синхронизация с данными из БД
+          setTodos(prev => prev.map(t => 
+            t.id === id ? { ...t, done: returnedDone === true } : t
+          ));
+        }
+      }
       
       // Показываем уведомление
       toast.success(
@@ -235,7 +275,7 @@ export default function TodoList({
           <div>
             <div className="font-medium">{todo.name}</div>
             <div className="text-sm opacity-80">
-              {!newDone ? 'Задача выполнена!' : 'Задача возвращена'}
+              {!newDone ? 'Задача возвращена' : 'Задача выполнена!'}
             </div>
           </div>
         </div>
@@ -359,102 +399,137 @@ export default function TodoList({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Фильтры */}
-      <div className="flex flex-wrap gap-2">
-        {/* Переключатель вида списка */}
-        <button
-          onClick={() => setListView(prev => prev === 'vertical' ? 'horizontal' : 'vertical')}
-          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-          title="Переключить вид списка"
-        >
-          {listView === 'vertical' ? <MdGridView className="w-5 h-5" /> : <MdViewList className="w-5 h-5" />}
-        </button>
-
-        {/* Кнопка синхронизации с БД */}
-        <button
-          onClick={syncWithDatabase}
-          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-          title="Синхронизировать с базой данных"
-        >
-          <MdRefresh className="w-5 h-5" />
-        </button>
-
-        {/* Фильтры */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setIsHideCompleted(false)}
-            className={`
-              p-2 rounded-lg transition-colors
-              ${!isHideCompleted 
-                ? 'bg-rose-400/20 text-rose-400' 
-                : 'bg-white/5 hover:bg-white/10'
-              }
-            `}
-            title="Показать все задачи"
-          >
-            <MdDoneAll className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setIsHideCompleted(true)}
-            className={`
-              p-2 rounded-lg transition-colors
-              ${isHideCompleted
-                ? 'bg-rose-400/20 text-rose-400'
-                : 'bg-white/5 hover:bg-white/10'
-              }
-            `}
-            title="Показать только невыполненные"
-          >
-            <MdPendingActions className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Список задач */}
-      <AnimatePresence mode="popLayout">
-        <div className={`
-          ${listView === 'horizontal' 
-            ? 'flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory' 
-            : 'grid gap-4'
-          }
-        `}>
-          {filteredTodos.map(todo => (
-            <motion.div
-              key={todo.id}
-              layout
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ 
-                opacity: 0,
-                scale: 0.8,
-                x: todo.done ? 100 : 0,
-                transition: { duration: 0.5 }
-              }}
-              className={listView === 'horizontal' ? 'snap-start' : ''}
-            >
-              <TodoCard
-                todo={todo}
-                listView={listView}
-                onToggle={handleToggle}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            </motion.div>
-          ))}
-        </div>
-      </AnimatePresence>
-
-      {/* Модальное окно редактирования */}
-      <AnimatePresence>
-        {selectedTodo && (
-          <EditTodoModal
-            todo={selectedTodo}
-            onClose={() => setSelectedTodo(null)}
-            onSave={handleSave}
+    <div className="space-y-4">
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-8 h-8 border-2 border-t-transparent border-[#E8D9C5] rounded-full"
           />
-        )}
-      </AnimatePresence>
+        </div>
+      ) : (
+        <>
+          {/* Управление списком и счетчик */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-[#E8D9C5]">
+                {isHideCompleted 
+                  ? `Активные задачи: ${filteredTodos.length}` 
+                  : `Всего задач: ${filteredTodos.length} (активных: ${filteredTodos.filter(t => !t.done).length})`
+                }
+              </span>
+              
+              {/* Индикатор кеша - показываем, если у нас есть локальные изменения */}
+              {todos.some(todo => {
+                const localTask = initialTodos.find(t => t.id === todo.id);
+                return localTask && ((localTask.done === true) !== (todo.done === true));
+              }) && (
+                <span className="text-xs py-0.5 px-1.5 bg-orange-400/20 text-orange-400 rounded-full">
+                  локальный кеш
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-1">
+              {/* Кнопка синхронизации */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={syncWithDatabase}
+                className="p-1.5 text-[#E8D9C5]/60 hover:text-[#E8D9C5] rounded-md"
+                title="Синхронизировать с базой данных"
+              >
+                <MdRefresh className="w-4 h-4" />
+              </motion.button>
+              
+              {/* Переключатель вида списка */}
+              <button
+                onClick={() => setListView(prev => prev === 'vertical' ? 'horizontal' : 'vertical')}
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                title="Переключить вид списка"
+              >
+                {listView === 'vertical' ? <MdGridView className="w-5 h-5" /> : <MdViewList className="w-5 h-5" />}
+              </button>
+
+              {/* Фильтры */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsHideCompleted(false)}
+                  className={`
+                    p-2 rounded-lg transition-colors
+                    ${!isHideCompleted 
+                      ? 'bg-rose-400/20 text-rose-400' 
+                      : 'bg-white/5 hover:bg-white/10'
+                    }
+                  `}
+                  title="Показать все задачи"
+                >
+                  <MdDoneAll className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setIsHideCompleted(true)}
+                  className={`
+                    p-2 rounded-lg transition-colors
+                    ${isHideCompleted
+                      ? 'bg-rose-400/20 text-rose-400'
+                      : 'bg-white/5 hover:bg-white/10'
+                    }
+                  `}
+                  title="Показать только невыполненные"
+                >
+                  <MdPendingActions className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Список задач */}
+          <AnimatePresence mode="popLayout">
+            <div className={`
+              ${listView === 'horizontal' 
+                ? 'flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory' 
+                : 'grid gap-4'
+              }
+            `}>
+              {filteredTodos.map(todo => (
+                <motion.div
+                  key={todo.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ 
+                    opacity: 0,
+                    scale: 0.8,
+                    x: todo.done ? 100 : 0,
+                    transition: { duration: 0.5 }
+                  }}
+                  className={listView === 'horizontal' ? 'snap-start' : ''}
+                >
+                  <TodoCard
+                    todo={todo}
+                    listView={listView}
+                    onToggle={handleToggle}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </AnimatePresence>
+
+          {/* Модальное окно редактирования */}
+          <AnimatePresence>
+            {selectedTodo && (
+              <EditTodoModal
+                todo={selectedTodo}
+                onClose={() => setSelectedTodo(null)}
+                onSave={handleSave}
+              />
+            )}
+          </AnimatePresence>
+        </>
+      )}
     </div>
   )
 } 
