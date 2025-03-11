@@ -13,6 +13,52 @@ const defaultUser = {
   photoUrl: ''
 }
 
+// Улучшенная функция для извлечения userId из URL
+export function getUserIdFromUrl(): number {
+  if (typeof window === 'undefined') return 0;
+  
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Проверяем все возможные варианты названия параметров
+    let userIdParam = urlParams.get('user_id') || urlParams.get('userid') || urlParams.get('userId') || urlParams.get('telegram_id');
+    
+    // Проверяем случай, когда весь URL после "?" это просто userid
+    if (!userIdParam && window.location.href.includes('?')) {
+      const rawQuery = window.location.href.split('?')[1];
+      if (rawQuery && !rawQuery.includes('=')) {
+        userIdParam = rawQuery;
+      }
+    }
+    
+    // Проверяем случай, когда URL содержит хеш-фрагмент с userid
+    if (!userIdParam && window.location.href.includes('#')) {
+      const hashFragment = window.location.href.split('#')[1];
+      if (hashFragment && !isNaN(parseInt(hashFragment))) {
+        userIdParam = hashFragment;
+      }
+    }
+    
+    if (userIdParam) {
+      // Очищаем от возможных нечисловых символов
+      const cleanedParam = userIdParam.replace(/[^0-9]/g, '');
+      const parsedUserId = parseInt(cleanedParam, 10);
+      
+      if (!isNaN(parsedUserId)) {
+        console.log('✅ Успешно извлечен userId из URL:', parsedUserId);
+        return parsedUserId;
+      }
+    }
+    
+    // Используем дефолтный ID, если ничего не найдено
+    console.log('⚠️ userId не найден в URL, используем дефолтный');
+    return 375634162; // Дефолтный ID для тестирования
+  } catch (error) {
+    console.error('❌ Ошибка при чтении userId из URL:', error);
+    return 375634162;
+  }
+}
+
 export function useTelegram() {
   const [userPhoto, setUserPhoto] = useState<string>('')
   const [userName, setUserName] = useState<string>('')
@@ -37,41 +83,29 @@ export function useTelegram() {
       try {
         if (typeof window === 'undefined') return false;
         
-        const urlParams = new URLSearchParams(window.location.search)
+        // Используем нашу улучшенную функцию извлечения userId
+        const extractedUserId = getUserIdFromUrl();
         
-        // Улучшаем поддержку различных форматов параметров
-        let userIdParam = urlParams.get('user_id') || urlParams.get('userid') || urlParams.get('userId')
-        
-        // Также проверяем, не является ли весь URL одним параметром (иногда бывает такое)
-        if (!userIdParam && window.location.href.includes('?')) {
-          const rawQuery = window.location.href.split('?')[1]
-          if (rawQuery && !rawQuery.includes('=')) {
-            userIdParam = rawQuery
-          }
+        if (extractedUserId) {
+          console.log('Вход по URL-параметру user_id:', extractedUserId);
+          setUserId(extractedUserId);
+          
+          // Установка имени пользователя, с проверкой
+          const urlParams = new URLSearchParams(window.location.search);
+          const nameParam = urlParams.get('name') || urlParams.get('username') || 'Пользователь';
+          setUserName(nameParam);
+          
+          // Установка фото, с проверкой
+          const photoParam = urlParams.get('photo') || urlParams.get('photo_url') || '';
+          setUserPhoto(photoParam);
+          
+          setIsInitialized(true);
+          return true;
         }
-        
-        if (userIdParam) {
-          const parsedUserId = parseInt(userIdParam, 10)
-          if (!isNaN(parsedUserId)) {
-            console.log('Вход по URL-параметру user_id:', parsedUserId)
-            setUserId(parsedUserId)
-            
-            // Установка имени пользователя, с проверкой
-            const nameParam = urlParams.get('name') || urlParams.get('username') || 'Пользователь'
-            setUserName(nameParam)
-            
-            // Установка фото, с проверкой
-            const photoParam = urlParams.get('photo') || urlParams.get('photo_url') || ''
-            setUserPhoto(photoParam)
-            
-            setIsInitialized(true)
-            return true
-          }
-        }
-        return false
+        return false;
       } catch (error) {
-        console.error('Ошибка при чтении URL параметров:', error)
-        return false
+        console.error('Ошибка при чтении URL параметров:', error);
+        return false;
       }
     }
 

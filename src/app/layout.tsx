@@ -5,6 +5,7 @@ import { Toaster } from 'sonner'
 import { NavigationLoader } from './components/ui/NavigationLoader'
 import LogViewer from './components/LogViewer'
 import Script from 'next/script'
+import { UserIdProvider } from './contexts/UserIdContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -40,19 +41,21 @@ export default function RootLayout({
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
       </head>
       <body className={inter.className}>
-        <NavigationLoader />
-        {children}
-        <Toaster 
-          position="top-center"
-          toastOptions={{
-            style: {
-              background: '#2A2A2A',
-              border: '1px solid #333333',
-              color: '#E8D9C5',
-            }
-          }}
-        />
-        <LogViewer />
+        <UserIdProvider>
+          <NavigationLoader />
+          {children}
+          <Toaster 
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: '#2A2A2A',
+                border: '1px solid #333333',
+                color: '#E8D9C5',
+              }
+            }}
+          />
+          <LogViewer />
+        </UserIdProvider>
       </body>
     </html>
   )

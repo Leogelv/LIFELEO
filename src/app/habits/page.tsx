@@ -7,6 +7,7 @@ import { HabitCard } from '../components/habits/HabitCard'
 import { EditHabitModal } from '../components/habits/EditHabitModal'
 import { supabase } from '@/utils/supabase/client'
 import { useTelegram } from '../hooks/useTelegram'
+import { useUserId } from '../contexts/UserIdContext'
 import { toast } from 'sonner'
 import { habitsRealtime } from '@/utils/habits-realtime'
 import { Habit } from '../../types/habit'
@@ -14,26 +15,45 @@ import Link from 'next/link'
 import { Icon } from '@iconify/react'
 
 export default function HabitsPage() {
-  const { userId } = useTelegram()
+  const { userId: telegramUserId } = useTelegram()
+  const userId = useUserId()
+  const effectiveUserId = userId || telegramUserId
+  
   const [habits, setHabits] = useState<Habit[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null)
 
   useEffect(() => {
+    console.log('🧪 HabitsPage: userId из контекста =', userId);
+    console.log('🧪 HabitsPage: userId из telegram =', telegramUserId);
+    console.log('🧪 HabitsPage: используем effectiveUserId =', effectiveUserId);
+  }, [userId, telegramUserId, effectiveUserId]);
+
+  useEffect(() => {
     const fetchHabits = async () => {
       try {
         setIsLoading(true)
+        console.log('🔍 Загрузка привычек для userId:', effectiveUserId)
+        
+        if (!effectiveUserId) {
+          console.warn('⚠️ Отсутствует userId, привычки не будут загружены');
+          setHabits([]);
+          setIsLoading(false);
+          return;
+        }
+        
         const { data, error } = await supabase
           .from('habits')
           .select('*')
-          .eq('telegram_id', userId)
+          .eq('telegram_id', effectiveUserId)
           .order('created_at', { ascending: false })
 
         if (error) {
           console.error('Error fetching habits:', error)
           toast.error('Не удалось загрузить привычки')
         } else {
+          console.log(`✅ Загружено ${data?.length || 0} привычек`)
           setHabits(data || [])
         }
       } catch (error) {
@@ -47,7 +67,7 @@ export default function HabitsPage() {
     fetchHabits()
 
     // Подписка на изменения в реальном времени
-    const unsubscribe = habitsRealtime.subscribe(String(userId), (payload) => {
+    const unsubscribe = habitsRealtime.subscribe(String(effectiveUserId), (payload) => {
       // Обновляем список привычек только при изменениях в таблице habits
       if (payload.table === 'habits') {
         // Перезагружаем привычки из базы данных
@@ -58,7 +78,7 @@ export default function HabitsPage() {
     return () => {
       unsubscribe()
     }
-  }, [userId])
+  }, [effectiveUserId])
 
   const handleAddHabit = () => {
     setEditingHabit(null)
@@ -82,7 +102,7 @@ export default function HabitsPage() {
         const { data, error } = await supabase
           .from('habits')
           .select('*')
-          .eq('telegram_id', userId)
+          .eq('telegram_id', effectiveUserId)
           .order('created_at', { ascending: false })
 
         if (error) {
