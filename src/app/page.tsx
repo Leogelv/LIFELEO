@@ -5,6 +5,7 @@ import { logger } from '@/utils/logger'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTelegram } from './hooks/useTelegram'
+import { useUsername } from './contexts/UserIdContext'
 import { Icon } from '@iconify/react'
 import { supabase } from '@/utils/supabase/client'
 import { realtime } from '@/utils/realtime'
@@ -180,9 +181,13 @@ const UtilityCard = ({ utility }: { utility: Utility }) => (
 // Оптимизированная главная страница
 export default function Home() {
   const { user, isTelegramWebApp, safeAreaInset } = useTelegram()
+  const contextUsername = useUsername()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [mounted, setMounted] = useState(false)
   const [isLowEndDevice, setIsLowEndDevice] = useState(false)
+  
+  // Используем имя пользователя из контекста в приоритете
+  const effectiveUsername = contextUsername !== 'Пользователь' ? contextUsername : user.username
   
   // Оптимизация: предотвращаем ненужные ререндеры
   useEffect(() => {
@@ -312,7 +317,7 @@ export default function Home() {
                 animate={animationProps.animate}
                 transition={{ ...animationProps.transition, delay: isLowEndDevice ? 0 : 0.2 }}
               >
-                {getGreeting}, {user?.firstName || 'Гость'}!
+                {getGreeting}, {effectiveUsername}!
               </motion.p>
               <motion.p 
                 className="text-[#E8D9C5]/70"

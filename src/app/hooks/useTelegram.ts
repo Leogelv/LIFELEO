@@ -86,6 +86,36 @@ export function getUserIdFromUrl(): number {
   }
 }
 
+// Новая функция для извлечения имени пользователя из URL
+export function getUsernameFromUrl(): string {
+  if (typeof window === 'undefined') return 'Пользователь';
+  
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Проверяем все возможные параметры имени
+    let nameParam = urlParams.get('name') || urlParams.get('username') || urlParams.get('user_name');
+    
+    console.log('🔎 Поиск имени в URL параметрах:', { 
+      name: urlParams.get('name'),
+      username: urlParams.get('username'),
+      user_name: urlParams.get('user_name')
+    });
+    
+    if (nameParam) {
+      console.log('✅ Успешно извлечено имя из URL:', nameParam);
+      return nameParam;
+    }
+    
+    // Не нашли имя в URL, возвращаем дефолтное
+    console.log('⚠️ Имя пользователя не найдено в URL, используем дефолтное');
+    return 'Пользователь';
+  } catch (error) {
+    console.error('❌ Ошибка при чтении имени из URL:', error);
+    return 'Пользователь';
+  }
+}
+
 export function useTelegram() {
   const [userPhoto, setUserPhoto] = useState<string>('')
   const [userName, setUserName] = useState<string>('')
@@ -117,12 +147,12 @@ export function useTelegram() {
           console.log('Вход по URL-параметру user_id:', extractedUserId);
           setUserId(extractedUserId);
           
-          // Установка имени пользователя, с проверкой
-          const urlParams = new URLSearchParams(window.location.search);
-          const nameParam = urlParams.get('name') || urlParams.get('username') || 'Пользователь';
-          setUserName(nameParam);
+          // Используем нашу новую функцию для получения имени пользователя
+          const extractedUsername = getUsernameFromUrl();
+          setUserName(extractedUsername);
           
           // Установка фото, с проверкой
+          const urlParams = new URLSearchParams(window.location.search);
           const photoParam = urlParams.get('photo') || urlParams.get('photo_url') || '';
           setUserPhoto(photoParam);
           
