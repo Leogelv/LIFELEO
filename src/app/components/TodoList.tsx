@@ -170,12 +170,22 @@ export default function TodoList({
   // Фильтруем и сортируем задачи на основе строгой проверки на done
   const filteredTodos = sortTodos(todos.filter(todo => {
     // Проверяем, что значение done точно приведено к boolean
-    const isDone = Boolean(todo.done)
+    const isDone = todo.done === true;
+    
+    // Логируем задачи с неожиданным типом поля done
+    if (typeof todo.done !== 'boolean') {
+      logger.warn('Найдена задача с неправильным типом done:', {
+        id: todo.id,
+        name: todo.name,
+        done: todo.done,
+        typeOfDone: typeof todo.done
+      });
+    }
     
     if (isHideCompleted) {
-      return !isDone // Показываем только невыполненные
+      return !isDone; // Показываем только невыполненные
     }
-    return true // Показываем все
+    return true; // Показываем все
   }))
 
   // Обработка выполнения задачи
@@ -183,17 +193,30 @@ export default function TodoList({
     const todo = todos.find(t => t.id === id)
     if (!todo) return
 
+    // Преобразуем done к строгому boolean перед инверсией
+    const currentDone = todo.done === true;
+    const newDone = !currentDone;
+    
+    // Логируем для отладки
+    logger.debug('Переключение статуса задачи:', { 
+      id, 
+      name: todo.name,
+      currentDone,
+      newDone,
+      originalDone: todo.done
+    });
+
     // Оптимистичное обновление
     setTodos(prev => prev.map(t => 
-      t.id === id ? { ...t, done: !t.done } : t
+      t.id === id ? { ...t, done: newDone } : t
     ))
 
     try {
-      logger.debug('Отправка запроса на изменение статуса задачи:', { id, newStatus: !todo.done })
+      logger.debug('Отправка запроса на изменение статуса задачи:', { id, newStatus: newDone })
       
       const { error, data } = await supabase
         .from('todos')
-        .update({ done: !todo.done })
+        .update({ done: newDone })
         .eq('id', id)
         .select('*')
 
@@ -201,7 +224,7 @@ export default function TodoList({
 
       logger.info('Задача обновлена в БД:', { 
         id, 
-        done: !todo.done, 
+        done: newDone, 
         response: data 
       })
       
@@ -212,7 +235,7 @@ export default function TodoList({
           <div>
             <div className="font-medium">{todo.name}</div>
             <div className="text-sm opacity-80">
-              {!todo.done ? 'Задача выполнена!' : 'Задача возвращена'}
+              {!newDone ? 'Задача выполнена!' : 'Задача возвращена'}
             </div>
           </div>
         </div>
@@ -224,7 +247,7 @@ export default function TodoList({
       
       // Откатываем изменения
       setTodos(prev => prev.map(t => 
-        t.id === id ? { ...t, done: todo.done } : t
+        t.id === id ? { ...t, done: currentDone } : t
       ))
     }
   }
@@ -287,15 +310,38 @@ export default function TodoList({
       
       // Сравниваем данные из БД с локальным состоянием
       const localTasks = [...todos];
-      const remoteTasks = data || [];
+      const remoteTasks = data ? data.map(task => ({
+        ...task,
+        done: task.done === true // Строгое преобразование к boolean
+      })) : [];
+      
+      // Логируем все задачи с нестандартными типами
+      const tasksWithNonBooleanDone = remoteTasks.filter(task => typeof task.done !== 'boolean');
+      if (tasksWithNonBooleanDone.length > 0) {
+        logger.warn('В БД найдены задачи с нестандартным типом поля done:', {
+          count: tasksWithNonBooleanDone.length,
+          tasks: tasksWithNonBooleanDone.map(t => ({ 
+            id: t.id, 
+            name: t.name, 
+            done: t.done, 
+            typeOfDone: typeof t.done 
+          }))
+        });
+      }
       
       const changedTasks = remoteTasks.filter(remoteTask => {
         const localTask = localTasks.find(t => t.id === remoteTask.id);
-        return localTask && (localTask.done !== remoteTask.done);
+        // Строгое сравнение boolean значений
+        return localTask && ((localTask.done === true) !== (remoteTask.done === true));
       });
       
       if (changedTasks.length > 0) {
-        logger.warn('Найдены задачи с несоответствием статуса:', changedTasks);
+        logger.warn('Найдены задачи с несоответствием статуса:', changedTasks.map(t => ({
+          id: t.id,
+          name: t.name,
+          done_in_db: t.done,
+          done_local: localTasks.find(lt => lt.id === t.id)?.done
+        })));
         toast.success(`Синхронизировано задач: ${changedTasks.length}`);
       } else {
         toast.info('Все задачи уже синхронизированы');
