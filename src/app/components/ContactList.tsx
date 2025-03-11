@@ -244,7 +244,7 @@ export function ContactList() {
       const firstNameMatch = contact.first_name?.toLowerCase().includes(searchLower) || false;
       const lastNameMatch = contact.last_name?.toLowerCase().includes(searchLower) || false;
       const usernameMatch = contact.username?.toLowerCase().includes(searchLower) || false;
-      const telegramIdMatch = String(contact.telegram_id).includes(searchTerm);
+      const telegramIdMatch = String(contact.user_id).includes(searchTerm);
       
       return firstNameMatch || lastNameMatch || usernameMatch || telegramIdMatch;
     });
