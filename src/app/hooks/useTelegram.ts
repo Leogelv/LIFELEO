@@ -84,10 +84,10 @@ export function getUserIdFromUrl(): number {
     }
 
     console.log('❌ Не удалось найти userId в URL, использую дефолтный ID');
-    return 375634162; // Дефолтный ID для тестирования
+    return ENV_USER_ID;
   } catch (error) {
     console.error('❌ Ошибка при чтении userId из URL:', error);
-    return 375634162;
+    return ENV_USER_ID;
   }
 }
 
@@ -144,9 +144,25 @@ export function useTelegram() {
     }
   }, [])
 
+  // Определяем, находимся ли мы в Telegram WebApp
+  const checkTelegramEnvironment = () => {
+    if (typeof window === 'undefined') return false;
+    
+    return window.location.href.includes('tgWebAppData') || 
+           window.location.href.includes('tgWebAppPlatform') ||
+           (window.Telegram && window.Telegram.WebApp);
+  }
+
   useEffect(() => {
-    // Если не на клиенте или уже инициализировано, выходим
-    if (!isClient || isInitialized) return;
+    // Если не на клиенте, выходим
+    if (!isClient) return;
+
+    // Сначала определяем, в каком окружении запущено приложение
+    const isTelegram = checkTelegramEnvironment();
+    setIsTelegramWebApp(!!isTelegram);
+    
+    // Если приложение инициализировано, выходим
+    if (isInitialized) return;
 
     // Проверяем URL параметры для браузерной версии
     const checkUrlParams = () => {
@@ -177,16 +193,7 @@ export function useTelegram() {
         console.error('Ошибка при чтении URL параметров:', error);
         return false;
       }
-    }
-
-    // Проверяем, запущено ли приложение в Telegram WebApp
-    const isTelegramEnvironment = () => {
-      if (typeof window === 'undefined') return false;
-      
-      return window.location.href.includes('tgWebAppData') || 
-             window.location.href.includes('tgWebAppPlatform') ||
-             (window.Telegram && window.Telegram.WebApp);
-    }
+    };
 
     // Ждем загрузки скрипта
     const initTelegram = () => {
@@ -240,60 +247,60 @@ export function useTelegram() {
         console.error('Ошибка при инициализации Telegram WebApp:', error)
         return false
       }
-    }
+    };
 
-    // Определяем, в каком окружении запущено приложение
-    const isTelegram = isTelegramEnvironment()
-    
     if (isTelegram) {
       // Если в Telegram, пробуем инициализировать WebApp
-      const isTelegramInitialized = initTelegram()
+      const isTelegramInitialized = initTelegram();
       
       // Если не удалось инициализировать WebApp, пробуем получить данные из URL
       if (!isTelegramInitialized) {
-        checkUrlParams()
+        checkUrlParams();
       }
       
       // Подписываемся на событие загрузки скрипта
-      const script = document.querySelector('script[src*="telegram-web-app.js"]')
+      const script = document.querySelector('script[src*="telegram-web-app.js"]');
       if (script) {
-        script.addEventListener('load', initTelegram)
+        script.addEventListener('load', initTelegram);
       }
     } else {
       // Если не в Telegram, пробуем получить данные из URL
-      const isUrlParamsFound = checkUrlParams()
+      const isUrlParamsFound = checkUrlParams();
       
       // Если и в URL нет данных, используем значения из .env.local
       if (!isUrlParamsFound) {
-        console.log('Используем данные из .env.local для входа')
-        setUserId(ENV_USER_ID)
-        setUserName(ENV_USER_NAME)
+        console.log('Используем данные из .env.local для входа');
+        setUserId(ENV_USER_ID);
+        setUserName(ENV_USER_NAME);
         
         // Показываем модальное окно с паролем, если пароль еще не был введен
         if (!isPasswordVerified) {
-          setShowPasswordModal(true)
+          console.log('Требуется проверка пароля, показываем модальное окно');
+          setShowPasswordModal(true);
         } else {
-          setIsInitialized(true)
+          console.log('Пароль уже был введен, пропускаем проверку');
+          setIsInitialized(true);
         }
       }
     }
 
     return () => {
       if (typeof window !== 'undefined') {
-        const script = document.querySelector('script[src*="telegram-web-app.js"]')
+        const script = document.querySelector('script[src*="telegram-web-app.js"]');
         if (script) {
-          script.removeEventListener('load', initTelegram)
+          script.removeEventListener('load', initTelegram);
         }
       }
-    }
-  }, [isClient, isInitialized, isPasswordVerified])
+    };
+  }, [isClient, isInitialized, isPasswordVerified]);
 
   // Функция для обработки успешного ввода пароля
   const handlePasswordSuccess = () => {
-    setIsPasswordVerified(true)
-    setShowPasswordModal(false)
-    setIsInitialized(true)
-  }
+    setIsPasswordVerified(true);
+    setShowPasswordModal(false);
+    setIsInitialized(true);
+    console.log('Пароль введен успешно, приложение инициализировано');
+  };
 
   // Создаем объект user для удобства
   const user = {
@@ -302,7 +309,7 @@ export function useTelegram() {
     lastName: userName.split(' ').slice(1).join(' '),
     username: userName,
     photoUrl: userPhoto
-  }
+  };
 
   return {
     userPhoto,
@@ -317,5 +324,5 @@ export function useTelegram() {
     showPasswordModal,
     handlePasswordSuccess,
     ENV_PASSWORD
-  }
+  };
 } 

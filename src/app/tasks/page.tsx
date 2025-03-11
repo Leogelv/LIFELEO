@@ -11,6 +11,8 @@ import { Icon } from '@iconify/react'
 import { supabase } from '@/utils/supabase/client'
 import { useContext } from 'react'
 import { UserIdContext } from '@/app/contexts/UserContext'
+import { useUserId } from '@/app/contexts/UserIdContext'
+import { useTelegram } from '../hooks/useTelegram'
 import { logger } from '@/utils/logger'
 import { toast } from 'sonner'
 import { v4 as uuidv4 } from 'uuid'
@@ -34,7 +36,37 @@ export default function TasksPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [isLoading, setIsLoading] = useState(false)
   const [forceRefresh, setForceRefresh] = useState(0) // Счетчик для принудительного обновления
-  const userId = useContext(UserIdContext)
+  
+  // Получаем userId из нескольких источников
+  const oldContextUserId = useContext(UserIdContext)
+  const { userId: telegramUserId, isInitialized } = useTelegram()
+  const contextUserId = useUserId()
+  
+  // Получаем userId напрямую из URL в крайнем случае
+  const getDirectUserId = () => {
+    if (typeof window === 'undefined') return 0;
+    
+    const urlMatch = window.location.href.match(/(\d{6,})/);
+    if (urlMatch) {
+      return parseInt(urlMatch[0], 10);
+    }
+    return 0;
+  }
+  
+  const directUserId = getDirectUserId();
+  
+  // Определяем эффективный userId с приоритетом
+  const effectiveUserId = contextUserId || oldContextUserId || telegramUserId || directUserId;
+  
+  useEffect(() => {
+    console.log('🧪 TasksPage: userId из старого контекста =', oldContextUserId);
+    console.log('🧪 TasksPage: userId из нового контекста =', contextUserId);
+    console.log('🧪 TasksPage: userId из telegram =', telegramUserId);
+    console.log('🧪 TasksPage: directUserId =', directUserId);
+    console.log('🧪 TasksPage: используем effectiveUserId =', effectiveUserId);
+    console.log('🧪 TasksPage: isInitialized =', isInitialized);
+  }, [oldContextUserId, contextUserId, telegramUserId, directUserId, effectiveUserId, isInitialized]);
+
   const [taskName, setTaskName] = useState('')
   const [notes, setNotes] = useState('')
   const [category, setCategory] = useState<string | undefined>(undefined)
@@ -64,18 +96,23 @@ export default function TasksPage() {
 
   // Загрузка задач напрямую из БД при инициализации и переключении вида
   useEffect(() => {
+    // Если нет userId или приложение не инициализировано (пароль не введен), выходим
+    if (!effectiveUserId || !isInitialized) {
+      console.log('⚠️ Нет userId или пароль не введен, задачи не будут загружены');
+      return;
+    }
+    
     const loadTasksFromDB = async () => {
-      if (!userId) return
-      
       setIsLoading(true)
       
       try {
+        console.log('🔍 Загрузка задач для userId:', effectiveUserId);
         logger.info('Загрузка задач напрямую из БД')
         
         const { data, error } = await supabase
           .from('todos')
           .select('*')
-          .eq('telegram_id', userId)
+          .eq('telegram_id', effectiveUserId)
           .order('deadline', { ascending: true })
           
         if (error) {
@@ -117,7 +154,7 @@ export default function TasksPage() {
     }
     
     loadTasksFromDB()
-  }, [userId, viewMode, forceRefresh]) // Добавляем forceRefresh в зависимости
+  }, [effectiveUserId, viewMode, forceRefresh, isInitialized]) // Добавляем isInitialized в зависимости
 
   // Обработчик обновления задачи из календаря
   const handleTodoUpdate = (updatedTodo: Todo) => {
@@ -187,7 +224,7 @@ export default function TasksPage() {
 
   // Создание задачи
   const handleSave = async () => {
-    if (!taskName.trim() || !userId) return
+    if (!taskName.trim() || !effectiveUserId) return
     
     try {
       logger.info('Создание новой задачи:', { 
@@ -202,7 +239,7 @@ export default function TasksPage() {
         .insert({
           name: taskName,
           deadline: deadline.toISOString(),
-          telegram_id: userId,
+          telegram_id: effectiveUserId,
           done: false,
           notes: notes || null,
           category: category || null,
