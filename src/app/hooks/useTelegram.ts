@@ -148,9 +148,27 @@ export function useTelegram() {
   const checkTelegramEnvironment = () => {
     if (typeof window === 'undefined') return false;
     
-    return window.location.href.includes('tgWebAppData') || 
-           window.location.href.includes('tgWebAppPlatform') ||
-           (window.Telegram && window.Telegram.WebApp);
+    // Более точная проверка окружения Telegram
+    // 1. Проверка URL параметров от Telegram 
+    const hasTelegramParams = window.location.href.includes('tgWebAppData') || 
+                               window.location.href.includes('tgWebAppPlatform');
+    
+    // 2. Проверка наличия объекта WebApp в глобальном объекте Telegram 
+    const hasTelegramWebApp = window.Telegram && window.Telegram.WebApp ? true : false;
+    
+    // 3. Проверка мобильного приложения Telegram через User-Agent
+    const userAgent = window.navigator.userAgent || '';
+    const isTelegramUserAgent = userAgent.includes('Telegram') || userAgent.includes('TelegramBot');
+    
+    // Логируем результаты определения для отладки
+    console.log('📱 Определение окружения:', { 
+      hasTelegramParams, 
+      hasTelegramWebApp, 
+      isTelegramUserAgent,
+      userAgent
+    });
+    
+    return hasTelegramParams || hasTelegramWebApp || isTelegramUserAgent;
   }
 
   useEffect(() => {
@@ -159,7 +177,17 @@ export function useTelegram() {
 
     // Сначала определяем, в каком окружении запущено приложение
     const isTelegram = checkTelegramEnvironment();
-    setIsTelegramWebApp(!!isTelegram);
+    
+    // Если есть явный URL-параметр force_web=true, то принудительно считаем это браузерной версией
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceWeb = urlParams.get('force_web') === 'true';
+    
+    if (forceWeb) {
+      console.log('🌐 Принудительно использую браузерный режим (force_web=true)');
+      setIsTelegramWebApp(false);
+    } else {
+      setIsTelegramWebApp(!!isTelegram);
+    }
     
     // Если приложение инициализировано, выходим
     if (isInitialized) return;
@@ -275,10 +303,16 @@ export function useTelegram() {
         
         // Показываем модальное окно с паролем, если пароль еще не был введен
         if (!isPasswordVerified) {
-          console.log('Требуется проверка пароля, показываем модальное окно');
-          setShowPasswordModal(true);
+          if (!isTelegramWebApp) {
+            console.log('🔒 Требуется проверка пароля для браузерной версии, показываем модальное окно');
+            setShowPasswordModal(true);
+            // Важно! Не устанавливаем isInitialized в true, пока пароль не введен
+          } else {
+            console.log('🔓 Telegram версия, пропускаем проверку пароля');
+            setIsInitialized(true); // В Telegram версии сразу инициализируем
+          }
         } else {
-          console.log('Пароль уже был введен, пропускаем проверку');
+          console.log('✅ Пароль уже был введен, пропускаем проверку');
           setIsInitialized(true);
         }
       }
@@ -299,7 +333,13 @@ export function useTelegram() {
     setIsPasswordVerified(true);
     setShowPasswordModal(false);
     setIsInitialized(true);
-    console.log('Пароль введен успешно, приложение инициализировано');
+    
+    // Сохраняем состояние в localStorage чтобы не спрашивать пароль снова
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('passwordVerified', 'true');
+    }
+    
+    console.log('✅ Пароль введен успешно, приложение инициализировано');
   };
 
   // Создаем объект user для удобства
