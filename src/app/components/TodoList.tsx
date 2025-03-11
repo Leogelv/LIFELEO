@@ -194,7 +194,8 @@ export default function TodoList({
     if (isHideCompleted) {
       return !isDone; // Показываем только невыполненные
     }
-    return true; // Показываем все
+    // Исправляем логику - показываем только выполненные задачи
+    return isDone; // Показываем только выполненные
   }));
 
   // Показываем отфильтрованные задачи
@@ -415,8 +416,8 @@ export default function TodoList({
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-[#E8D9C5]">
                 {isHideCompleted 
-                  ? `Активные задачи: ${filteredTodos.length}` 
-                  : `Всего задач: ${filteredTodos.length} (активных: ${filteredTodos.filter(t => !t.done).length})`
+                  ? `Активные задачи: ${filteredTodos.length}/${todos.length}` 
+                  : `Выполненные задачи: ${filteredTodos.length}/${todos.length}`
                 }
               </span>
               
@@ -452,35 +453,18 @@ export default function TodoList({
                 {listView === 'vertical' ? <MdGridView className="w-5 h-5" /> : <MdViewList className="w-5 h-5" />}
               </button>
 
-              {/* Фильтры */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsHideCompleted(false)}
-                  className={`
-                    p-2 rounded-lg transition-colors
-                    ${!isHideCompleted 
-                      ? 'bg-rose-400/20 text-rose-400' 
-                      : 'bg-white/5 hover:bg-white/10'
-                    }
-                  `}
-                  title="Показать все задачи"
-                >
+              {/* Переключатель фильтра */}
+              <button
+                onClick={() => setIsHideCompleted(!isHideCompleted)}
+                className="p-2 rounded-lg bg-[#E8D9C5]/10 hover:bg-[#E8D9C5]/20 transition-colors"
+                title={isHideCompleted ? "Показать выполненные" : "Скрыть выполненные"}
+              >
+                {isHideCompleted ? (
                   <MdDoneAll className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setIsHideCompleted(true)}
-                  className={`
-                    p-2 rounded-lg transition-colors
-                    ${isHideCompleted
-                      ? 'bg-rose-400/20 text-rose-400'
-                      : 'bg-white/5 hover:bg-white/10'
-                    }
-                  `}
-                  title="Показать только невыполненные"
-                >
+                ) : (
                   <MdPendingActions className="w-5 h-5" />
-                </button>
-              </div>
+                )}
+              </button>
             </div>
           </div>
           
@@ -528,6 +512,17 @@ export default function TodoList({
               />
             )}
           </AnimatePresence>
+
+          {/* Сообщение при отсутствии задач */}
+          {filteredTodos.length === 0 && (
+            <div className="py-8 text-center">
+              <p className="text-[#E8D9C5]/60">
+                {isHideCompleted 
+                  ? "У вас нет активных задач. Создайте новую задачу!" 
+                  : "У вас нет выполненных задач."}
+              </p>
+            </div>
+          )}
         </>
       )}
     </div>
