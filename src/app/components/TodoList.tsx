@@ -52,8 +52,14 @@ export default function TodoList({
           return
         }
 
+        // Проверяем и фиксируем значения done, чтобы они точно были boolean
+        const fixedTodos = data?.map(task => ({
+          ...task,
+          done: Boolean(task.done) // Преобразуем в true/false
+        }))
+
         // Проверяем и логируем задачи, в которых могут быть расхождения с БД
-        const suspiciousTasks = data?.filter(task => {
+        const suspiciousTasks = fixedTodos?.filter(task => {
           // Проверка на несоответствие между UI и базой данных
           const uiTask = todos.find(t => t.id === task.id);
           return uiTask && uiTask.done !== task.done;
@@ -69,7 +75,7 @@ export default function TodoList({
         }
 
         logger.info('Таски успешно загружены', { count: data?.length })
-        setTodos(data || [])
+        setTodos(fixedTodos || [])
       } catch (error) {
         logger.error('Неожиданная ошибка при загрузке тасков', { error })
         toast.error('Что-то пошло не так')
@@ -161,10 +167,13 @@ export default function TodoList({
     return [...todosToSort].sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
   }
 
-  // Фильтруем и сортируем задачи
+  // Фильтруем и сортируем задачи на основе строгой проверки на done
   const filteredTodos = sortTodos(todos.filter(todo => {
+    // Проверяем, что значение done точно приведено к boolean
+    const isDone = Boolean(todo.done)
+    
     if (isHideCompleted) {
-      return !todo.done // Показываем только невыполненные
+      return !isDone // Показываем только невыполненные
     }
     return true // Показываем все
   }))

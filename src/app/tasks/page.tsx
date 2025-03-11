@@ -6,13 +6,14 @@ import { BottomMenu } from '../components/BottomMenu'
 import { useState, useEffect } from 'react'
 import { Todo } from '@/types/todo'
 import { TaskCalendar } from '../components/tasks/TaskCalendar'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Icon } from '@iconify/react'
 import { supabase } from '@/utils/supabase/client'
 import { useContext } from 'react'
 import { UserIdContext } from '@/app/contexts/UserContext'
 import { logger } from '@/utils/logger'
 import { toast } from 'sonner'
+import { CreateTodoModal } from '@/app/components/CreateTodoModal'
 
 type ViewMode = 'list' | 'calendar'
 
@@ -20,6 +21,7 @@ export default function TasksPage() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [isLoading, setIsLoading] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const userId = useContext(UserIdContext)
 
   // Загрузка задач напрямую из БД при инициализации и переключении вида
@@ -62,13 +64,31 @@ export default function TasksPage() {
     ))
   }
 
+  // Обработчик создания новой задачи
+  const handleCreateTodo = (newTodo: Todo) => {
+    setTodos(prev => [...prev, newTodo])
+  }
+
   return (
     <>
       <SafeArea className="min-h-screen bg-[#1A1A1A] overflow-x-hidden">
         <div className="container mx-auto px-4 py-4">
           {/* Заголовок и переключатель вида */}
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-[#E8D9C5]">Задачи</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-[#E8D9C5]">Задачи</h1>
+              
+              {/* Кнопка создания задачи */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsCreateModalOpen(true)}
+                className="p-2 rounded-full bg-[#E8D9C5]/10 hover:bg-[#E8D9C5]/20 text-[#E8D9C5]"
+                title="Создать задачу"
+              >
+                <Icon icon="solar:add-circle-bold" className="w-5 h-5" />
+              </motion.button>
+            </div>
             
             <div className="flex bg-[#2A2A2A] rounded-lg p-1">
               <motion.button
@@ -129,6 +149,16 @@ export default function TasksPage() {
         </div>
       </SafeArea>
       <BottomMenu />
+
+      {/* Модальное окно создания задачи */}
+      <AnimatePresence>
+        {isCreateModalOpen && (
+          <CreateTodoModal
+            onClose={() => setIsCreateModalOpen(false)}
+            onSave={handleCreateTodo}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 } 
