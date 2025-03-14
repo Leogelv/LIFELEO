@@ -57,7 +57,11 @@ interface TelegramResponse {
   group_chats_count: number
 }
 
-export function ContactList() {
+interface ContactListProps {
+  userId?: number;
+}
+
+export function ContactList({ userId }: ContactListProps) {
   const router = useRouter()
   const supabase = createClient()
   const [isLoading, setIsLoading] = useState(false)
@@ -75,8 +79,14 @@ export function ContactList() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   useEffect(() => {
-    logger.info('ContactList компонент инициализирован')
-    fetchContacts()
+    logger.info('ContactList компонент инициализирован', { userId })
+    
+    if (userId) {
+      fetchContacts()
+    } else {
+      logger.warn('ContactList: userId не предоставлен, контакты не будут загружены')
+      setLoading(false)
+    }
 
     // Создаем канал для real-time обновлений
     const channel = supabase
@@ -105,11 +115,17 @@ export function ContactList() {
       logger.debug('Отписываемся от обновлений контактов')
       supabase.removeChannel(channel)
     }
-  }, [supabase])
+  }, [supabase, userId])
 
   async function fetchContacts() {
+    if (!userId) {
+      logger.warn('fetchContacts: userId не предоставлен, контакты не будут загружены')
+      setLoading(false)
+      return
+    }
+    
     const startTime = performance.now()
-    logger.debug('Начинаем загрузку контактов')
+    logger.debug('Начинаем загрузку контактов для userId:', userId)
 
     try {
       const { data, error } = await supabase
@@ -297,6 +313,17 @@ export function ContactList() {
     return (
       <div className="flex items-center justify-center h-40">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white"></div>
+      </div>
+    )
+  }
+
+  // Если нет userId, показываем сообщение
+  if (!userId) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <Icon icon="solar:user-broken" className="w-12 h-12 mb-4 text-[#E8D9C5]/50" />
+        <h2 className="text-xl font-medium mb-2">Не удалось загрузить контакты</h2>
+        <p className="text-[#E8D9C5]/70 mb-6">Для доступа к контактам необходимо авторизоваться</p>
       </div>
     )
   }
