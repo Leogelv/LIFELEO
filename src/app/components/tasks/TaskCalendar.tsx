@@ -257,7 +257,7 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
                     ? 'bg-rose-400'
                     : 'bg-[#E8D9C5]/60'
               }`} />
-              <span className="line-clamp-2 font-medium text-sm break-words">{task.name}</span>
+              <span className={`${view === 'week' ? '' : 'line-clamp-2'} font-medium text-sm break-words`}>{task.name}</span>
               
               {/* Кнопки действий - появляются при наведении */}
               <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -361,22 +361,24 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
         </div>
       </div>
       
-      {/* Дни недели */}
-      <div className="grid grid-cols-7 border-b border-[#E8D9C5]/10">
-        {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day, index) => (
-          <div 
-            key={day} 
-            className={`py-3 text-center text-sm font-medium ${
-              index >= 5 ? 'text-[#E8D9C5]/40' : 'text-[#E8D9C5]/60'
-            }`}
-          >
-            {day}
-          </div>
-        ))}
-      </div>
+      {/* Дни недели - показываем только в месячном виде */}
+      {view === 'month' && (
+        <div className="grid grid-cols-7 border-b border-[#E8D9C5]/10">
+          {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day, index) => (
+            <div 
+              key={day} 
+              className={`py-3 text-center text-sm font-medium ${
+                index >= 5 ? 'text-[#E8D9C5]/40' : 'text-[#E8D9C5]/60'
+              }`}
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+      )}
       
       {/* Сетка календаря */}
-      <div className={`grid grid-cols-7 ${view === 'month' ? 'grid-rows-6' : 'grid-rows-1'}`}>
+      <div className={`grid ${view === 'month' ? 'grid-cols-7 grid-rows-6' : 'grid-cols-2 grid-rows-4'}`}>
         {view === 'month' && (
           // Пустые ячейки до начала месяца
           Array.from({ length: new Date(monthStart).getDay() === 0 ? 6 : new Date(monthStart).getDay() - 1 }).map((_, index) => (
@@ -402,7 +404,7 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
               onDrop={(e) => handleDrop(e, day)}
               className={`
                 relative border-b border-r border-[#E8D9C5]/5 p-3 
-                min-h-[120px] md:min-h-[140px] 
+                ${view === 'month' ? 'min-h-[120px] md:min-h-[140px]' : 'min-h-[180px] md:min-h-[200px]'}
                 transition-colors duration-200
                 ${isHovered ? 'bg-[#E8D9C5]/8' : ''}
                 ${isSelected ? 'bg-[#E8D9C5]/3' : ''}
@@ -422,7 +424,7 @@ export function TaskCalendar({ todos, onTodoUpdate }: TaskCalendarProps) {
                 ${isToday_ ? 'text-[#E8D9C5] font-semibold' : ''}
                 ${isPast ? 'text-[#E8D9C5]/40' : 'text-[#E8D9C5]/80'}
               `}>
-                {format(day, 'd')}
+                {view === 'week' ? format(day, 'EEEE, d MMMM', { locale: ru }) : format(day, 'd')}
                 
                 {/* Добавляем маленький индикатор, если есть задачи */}
                 {todos.filter(todo => isSameDay(new Date(todo.deadline), day)).length > 0 && (
