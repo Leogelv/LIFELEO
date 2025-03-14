@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NODE_OPTIONS=--openssl-legacy-provider next build",
+    "build:docker": "NODE_OPTIONS=--openssl-legacy-provider next build --config next.config.js",
     "start": "next start",
     "lint": "next lint",
     "db": "ts-node src/cli/supabase-manager.ts"
