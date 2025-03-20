@@ -30,6 +30,9 @@ interface Habit {
   active: boolean
   current_value?: number
   progress?: number
+  values_add?: string
+  values_del?: string
+  measure?: string
 }
 
 interface HabitCardProps {
@@ -58,6 +61,31 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
   const userId = useContext(UserIdContext)
   const config = categoryConfig[habit.category]
   const progress = (currentValue / habit.target_value) * 100
+
+  // Получаем значения для кнопок быстрого добавления из привычки или используем дефолтные
+  const getDefaultButtonValues = (): number[] => {
+    switch(habit.category) {
+      case 'water': return [100, 200, 300, 500];
+      case 'meditation': return [5, 10, 15, 20];
+      case 'sport': return [15, 30, 45, 60];
+      case 'breathing': return [3, 5, 7, 10];
+      case 'business': return [15, 30, 45, 60];
+      default: return [1, 5, 10];
+    }
+  };
+  
+  // Используем values_add из привычки или дефолтные значения
+  const quickAddValues = habit.values_add 
+    ? habit.values_add.split(',').map(Number).filter(n => !isNaN(n))
+    : getDefaultButtonValues();
+    
+  // Используем values_del из привычки или дефолтные значения (половинные от добавления)
+  const quickRemoveValues = habit.values_del
+    ? habit.values_del.split(',').map(Number).filter(n => !isNaN(n))
+    : quickAddValues.map(v => Math.floor(v / 2)).filter(v => v > 0);
+
+  // Единица измерения из привычки или из конфигурации категории
+  const measureUnit = habit.measure || config.unit;
 
   // Загрузка статистики
   const loadStats = async () => {
@@ -198,9 +226,38 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
       if (error) throw error
 
       setCurrentValue(prev => prev + value)
-      toast.success(`Добавлено ${value} ${config.unit}`)
+      toast.success(`Добавлено ${value} ${measureUnit}`)
     } catch (error) {
       toast.error('Не удалось добавить значение')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleQuickRemove = async (value: number) => {
+    setIsLoading(true)
+    try {
+      // Проверяем, что не уйдем в минус
+      if (currentValue < value) {
+        toast.error(`Нельзя вычесть больше, чем имеется (${currentValue} ${measureUnit})`)
+        setIsLoading(false)
+        return
+      }
+
+      const { error } = await supabase
+        .from('habit_logs')
+        .insert({
+          habit_id: habit.id,
+          value: -value,  // Отрицательное значение для вычитания
+          completed_at: new Date().toISOString()
+        })
+
+      if (error) throw error
+
+      setCurrentValue(prev => prev - value)
+      toast.success(`Вычтено ${value} ${measureUnit}`)
+    } catch (error) {
+      toast.error('Не удалось вычесть значение')
     } finally {
       setIsLoading(false)
     }
@@ -263,7 +320,7 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-white">
-                Сегодня: {currentValue} / {habit.target_value} {habit.category === 'water' ? 'мл' : 'мин'}
+                Сегодня: {currentValue} / {habit.target_value} {measureUnit}
               </span>
               <span className="font-medium text-white">
                 {Math.round(progress)}%
@@ -271,80 +328,41 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
             </div>
             <div className="relative h-2 rounded-full bg-white/10">
               <motion.div
-                className="absolute inset-y-0 left-0 rounded-full bg-blue-500"
                 initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, progress)}%` }}
-                transition={{ duration: 0.5 }}
+                animate={{ width: `${Math.min(progress, 100)}%` }}
+                className={`absolute h-full left-0 rounded-full ${
+                  progress >= 100 ? config.bgComplete : config.bg
+                }`}
               />
             </div>
           </div>
 
-          {/* Быстрые действия */}
-          <div className="flex flex-wrap gap-2 pt-2" onClick={e => e.stopPropagation()}>
-            {habit.category === 'water' && (
-              <>
-                <button
-                  onClick={() => handleQuickAdd(300)}
-                  className="px-4 py-2 rounded-xl bg-white/10 text-blue-400 hover:bg-white/20"
-                >
-                  +300 мл
-                </button>
-                <button
-                  onClick={() => handleQuickAdd(500)}
-                  className="px-4 py-2 rounded-xl bg-white/10 text-blue-400 hover:bg-white/20"
-                >
-                  +500 мл
-                </button>
-              </>
-            )}
-            {habit.category === 'meditation' && (
-              <>
-                <button
-                  onClick={() => handleQuickAdd(10)}
-                  className="px-4 py-2 rounded-xl bg-white/10 text-purple-400 hover:bg-white/20"
-                >
-                  +10 мин
-                </button>
-                <button
-                  onClick={() => handleQuickAdd(30)}
-                  className="px-4 py-2 rounded-xl bg-white/10 text-purple-400 hover:bg-white/20"
-                >
-                  +30 мин
-                </button>
-              </>
-            )}
-            {habit.category === 'sport' && (
-              <>
-                <button
-                  onClick={() => handleQuickAdd(30)}
-                  className="px-4 py-2 rounded-xl bg-white/10 text-green-400 hover:bg-white/20"
-                >
-                  +30 мин
-                </button>
-                <button
-                  onClick={() => handleQuickAdd(60)}
-                  className="px-4 py-2 rounded-xl bg-white/10 text-green-400 hover:bg-white/20"
-                >
-                  +60 мин
-                </button>
-              </>
-            )}
-            {habit.category === 'breathing' && (
-              <>
-                <button
-                  onClick={() => handleQuickAdd(5)}
-                  className="px-4 py-2 rounded-xl bg-white/10 text-cyan-400 hover:bg-white/20"
-                >
-                  +5 мин
-                </button>
-                <button
-                  onClick={() => handleQuickAdd(10)}
-                  className="px-4 py-2 rounded-xl bg-white/10 text-cyan-400 hover:bg-white/20"
-                >
-                  +10 мин
-                </button>
-              </>
-            )}
+          {/* Кнопки быстрого добавления */}
+          <div className="flex flex-wrap gap-2">
+            {quickAddValues.slice(0, 4).map((value, i) => (
+              <QuickAddButton
+                key={`add-${i}`}
+                value={value}
+                unit={measureUnit}
+                onClick={() => handleQuickAdd(value)}
+                isLoading={isLoading}
+                config={config}
+              />
+            ))}
+          </div>
+          
+          {/* Кнопки быстрого вычитания */}
+          <div className="flex flex-wrap gap-2 mt-2">
+            {quickRemoveValues.slice(0, 3).map((value, i) => (
+              <QuickAddButton
+                key={`remove-${i}`}
+                value={-value}
+                unit={measureUnit}
+                onClick={() => handleQuickRemove(value)}
+                isLoading={isLoading}
+                config={config}
+              />
+            ))}
           </div>
         </div>
       </motion.div>
@@ -382,7 +400,7 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
                     <div>
                       <p className="text-sm opacity-60 mb-1">Всего за 30 дней</p>
                       <p className="text-xl font-medium">
-                        {Math.round(stats.total_value)} {config.unit}
+                        {Math.round(stats.total_value)} {measureUnit}
                       </p>
                     </div>
 
@@ -401,7 +419,7 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
                     <div>
                       <p className="text-sm opacity-60 mb-1">В среднем в день</p>
                       <p className="text-xl font-medium">
-                        {Math.round(stats.average_value)} {config.unit}
+                        {Math.round(stats.average_value)} {measureUnit}
                       </p>
                     </div>
                   </div>
@@ -453,14 +471,14 @@ function QuickAddButton({ value, unit, onClick, isLoading, config }: QuickAddBut
       disabled={isLoading}
       className={`
         px-4 py-2 rounded-xl
-        bg-white/10 backdrop-blur-sm
+        ${isNegative ? 'bg-red-400/20 hover:bg-red-400/30' : 'bg-white/10 hover:bg-white/20'} 
+        backdrop-blur-sm
         ${config.text} text-sm font-medium
         transition-colors
-        hover:bg-white/20
         disabled:opacity-50 disabled:cursor-not-allowed
       `}
     >
       {isNegative ? value : `+${value}`} {unit}
     </motion.button>
   )
-} 
+}
