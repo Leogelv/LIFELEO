@@ -1,81 +1,34 @@
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
+const { createServer } = require('http');
+const next = require('next');
 
-const PORT = process.env.PORT || 3000;
+const port = parseInt(process.env.PORT, 10) || 3000;
+const dev = process.env.NODE_ENV !== 'production';
+const app = next({ dev });
+const handle = app.getRequestHandler();
 
-// Проверяем наличие статического экспорта
-const hasStaticExport = fs.existsSync(path.join(__dirname, 'out'));
+app.prepare().then(() => {
+  const server = express();
 
-// Создаем сервер
-const app = express();
+  // Статические файлы из папки public
+  server.use(express.static('public'));
 
-// Статический путь для файлов в папке public
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Если есть статический экспорт, используем его
-if (hasStaticExport) {
-  app.use(express.static(path.join(__dirname, 'out')));
-  console.log('✅ Найден статический экспорт Next.js, используем его');
-  
-  // Все запросы маршрутизируем на index.html из экспорта
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'out', 'index.html'));
+  // API эндпоинт для проверки статуса
+  server.get('/api/status', (req, res) => {
+    res.json({ status: 'ok', server: 'express' });
   });
-} else {
-  // Основной маршрут
-  app.get('/', (req, res) => {
-    res.send(`
-      <html>
-        <head>
-          <title>LIFELEO - Сервер запущен</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              height: 100vh;
-              margin: 0;
-              background-color: #f5f5f5;
-            }
-            .container {
-              text-align: center;
-              padding: 2rem;
-              background-color: white;
-              border-radius: 8px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            .warning {
-              color: #e74c3c;
-              font-size: 0.9rem;
-              margin-top: 1rem;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>LIFELEO</h1>
-            <p>Сервер успешно запущен!</p>
-            <p>Полная версия приложения будет доступна позднее.</p>
-            <p class="warning">Внимание: Статический экспорт не найден.</p>
-          </div>
-        </body>
-      </html>
-    `);
-  });
-}
 
-// Маршрут для проверки статуса
-app.get('/status', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok',
-    staticExport: hasStaticExport
+  // Обработка всех остальных запросов через Next.js
+  server.all('*', (req, res) => {
+    return handle(req, res);
   });
-});
 
-// Запускаем сервер
-app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
-  console.log(`Статический экспорт: ${hasStaticExport ? 'Да' : 'Нет'}`);
+  // Создаем HTTP сервер и слушаем порт
+  createServer(server).listen(port, (err) => {
+    if (err) throw err;
+    console.log(`> Ready on http://localhost:${port}`);
+  });
+}).catch(err => {
+  console.error('Error starting server:', err);
+  process.exit(1);
 }); 

@@ -1,34 +1,27 @@
 FROM node:18-alpine
 
+# Установка рабочей директории
 WORKDIR /app
 
-# Устанавливаем переменные окружения
+# Установка переменных окружения
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS=--openssl-legacy-provider
-
-# Копируем необходимые файлы
-COPY package.json package-lock.json* ./
-COPY next.config.js ./
-COPY express-server.js ./
-COPY public ./public
-COPY src ./src
-COPY tsconfig.json ./
-
-# Устанавливаем зависимости
-RUN npm install
-
-# Собираем приложение (статический экспорт)
-RUN npm run build
-
-# Копируем out директорию (результат статического экспорта) в публичную директорию Express
-RUN mkdir -p public/out && cp -r out/* public/out || true
-
-# Открываем порт
-EXPOSE 3000
-
-# Переменная для использования в запуске
 ENV PORT=3000
 
-# Запускаем наш Express сервер
+# Копирование package.json и package-lock.json
+COPY package.json package-lock.json* ./
+
+# Установка зависимостей
+RUN npm install
+
+# Копирование файлов приложения
+COPY . .
+
+# Сборка приложения
+RUN npm run build
+
+# Открытие порта
+EXPOSE 3000
+
+# Запуск сервера
 CMD ["node", "express-server.js"] 
