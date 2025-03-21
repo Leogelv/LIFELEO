@@ -14,11 +14,13 @@ const nextConfig = {
   distDir: '.next',
   // Принудительно используем только серверный рендеринг
   experimental: {
-    // Отключаем статическую генерацию для проблемных страниц
+    // Отключаем статическую генерацию
     instrumentationHook: true,
+    // Отключаем сбор данных страниц
+    disableOptimizedLoading: true,
   },
-  // Отключаем генерацию статических страниц
-  reactStrictMode: true,
+  // Отключаем строгий режим React
+  reactStrictMode: false,
   // Отключаем проверку ESLint при сборке
   eslint: {
     ignoreDuringBuilds: true,
@@ -31,6 +33,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Отключаем оптимизацию сборки
+  swcMinify: false,
+  // Отключаем сбор данных страниц
+  optimizeFonts: false,
 };
 
 module.exports = nextConfig; 

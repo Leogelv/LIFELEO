@@ -23,5 +23,8 @@ RUN npm run build
 # Открываем порт
 EXPOSE 3000
 
-# Запускаем приложение
-CMD ["npm", "start"] 
+# Переменная для использования в запуске
+ENV PORT=3000
+
+# Напрямую запускаем сервер Next.js
+CMD ["sh", "-c", "NODE_ENV=production NODE_OPTIONS=--openssl-legacy-provider node_modules/.bin/next start -p ${PORT}"] 
