@@ -17,10 +17,10 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders })
 }
 
-// Проверка DEEPSEEK_API_KEY, который обязателен
-if (!process.env.DEEPSEEK_API_KEY) {
-  console.error('❌ DEEPSEEK_API_KEY is not set')
-  throw new Error('DEEPSEEK_API_KEY is not set in environment variables')
+// Проверка DEEPSEEK_API_KEY теперь не блокирует сборку
+const deepseekApiKeyExists = !!process.env.DEEPSEEK_API_KEY;
+if (!deepseekApiKeyExists) {
+  console.warn('⚠️ DEEPSEEK_API_KEY is not set - some features may be unavailable')
 }
 
 // Проверка YANDEX_API_KEY теперь не блокирует сборку
@@ -180,6 +180,17 @@ export async function POST(request: Request) {
       console.error('❌ chat_id is missing')
       return NextResponse.json({ error: 'chat_id is required' }, { 
         status: 400,
+        headers: corsHeaders
+      })
+    }
+
+    // Проверяем наличие необходимых API ключей
+    if (!deepseekApiKeyExists) {
+      return NextResponse.json({ 
+        error: 'DEEPSEEK_API_KEY is not configured',
+        details: 'The DeepSeek API key is required for message analysis but is not set in the environment variables.'
+      }, { 
+        status: 503, // Service Unavailable
         headers: corsHeaders
       })
     }

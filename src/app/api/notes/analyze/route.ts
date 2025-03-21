@@ -18,9 +18,10 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders })
 }
 
-if (!process.env.DEEPSEEK_API_KEY) {
-  console.error('❌ DEEPSEEK_API_KEY is not set')
-  throw new Error('DEEPSEEK_API_KEY is not set in environment variables')
+// Проверка DEEPSEEK_API_KEY теперь не блокирует сборку
+const deepseekApiKeyExists = !!process.env.DEEPSEEK_API_KEY;
+if (!deepseekApiKeyExists) {
+  console.warn('⚠️ DEEPSEEK_API_KEY is not set - note analysis functionality will be unavailable')
 }
 
 export async function POST(request: Request) {
@@ -28,6 +29,17 @@ export async function POST(request: Request) {
     // Добавляем CORS заголовки
     const headers = new Headers(corsHeaders)
     headers.set('Content-Type', 'application/json')
+
+    // Проверяем наличие DEEPSEEK_API_KEY перед обработкой запроса
+    if (!deepseekApiKeyExists) {
+      return NextResponse.json({ 
+        error: 'DEEPSEEK_API_KEY is not configured',
+        details: 'The DeepSeek API key is required for note analysis but is not set in the environment variables.'
+      }, { 
+        status: 503, // Service Unavailable
+        headers 
+      })
+    }
 
     // Получаем данные из запроса
     const { note_id } = await request.json()

@@ -1,11 +1,18 @@
 import { OpenAI } from 'openai'
 import { NextResponse } from 'next/server'
 
-const client = new OpenAI({
+// Проверка DEEPSEEK_API_KEY
+const deepseekApiKeyExists = !!process.env.DEEPSEEK_API_KEY;
+if (!deepseekApiKeyExists) {
+  console.warn('⚠️ DEEPSEEK_API_KEY is not set - analyze functionality will be unavailable')
+}
+
+// Создаем клиент только если ключ API существует
+const client = deepseekApiKeyExists ? new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY || '',
   baseURL: 'https://api.deepseek.com/v1',
   dangerouslyAllowBrowser: false
-})
+}) : null;
 
 const systemPrompt = `
 Проанализируй историю переписки и предоставь детальный анализ в следующем JSON формате:
@@ -54,6 +61,16 @@ const systemPrompt = `
 
 export async function POST(request: Request) {
   try {
+    // Проверяем наличие DEEPSEEK_API_KEY
+    if (!deepseekApiKeyExists || !client) {
+      return NextResponse.json({ 
+        error: 'DEEPSEEK_API_KEY is not configured',
+        details: 'The DeepSeek API key is required for this endpoint but is not set in the environment variables.'
+      }, { 
+        status: 503 // Service Unavailable
+      })
+    }
+
     const { history } = await request.json()
 
     const completion = await client.chat.completions.create({
@@ -70,12 +87,18 @@ export async function POST(request: Request) {
       : null
 
     if (!analysis) {
-      return new NextResponse('Failed to analyze history', { status: 500 })
+      return NextResponse.json({
+        error: 'Failed to analyze history',
+        details: 'The API did not return valid analysis data'
+      }, { status: 500 })
     }
 
     return NextResponse.json(analysis)
   } catch (error) {
     console.error('Error analyzing history:', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
+    return NextResponse.json({
+      error: 'Internal Server Error',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 })
   }
 } 
