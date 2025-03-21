@@ -12,6 +12,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Основной маршрут
 app.get('/', (req, res) => {
+  const now = new Date();
+  const formattedDate = now.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
   res.send(`
     <!DOCTYPE html>
     <html lang="ru">
@@ -65,6 +74,11 @@ app.get('/', (req, res) => {
           font-size: 1.5rem;
           margin-right: 0.5rem;
         }
+        .footer {
+          margin-top: 2rem;
+          font-size: 0.9rem;
+          opacity: 0.7;
+        }
       </style>
     </head>
     <body>
@@ -90,6 +104,11 @@ app.get('/', (req, res) => {
           <div class="menu-item">
             <span class="emoji">🤖</span> Голосовой бот
           </div>
+        </div>
+
+        <div class="footer">
+          Последнее обновление: ${formattedDate}<br>
+          Версия: Railway Express
         </div>
       </div>
     </body>
