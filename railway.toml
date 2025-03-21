@@ -3,9 +3,11 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "npm start"
-healthcheckPath = "/"
-healthcheckTimeout = 100
+# Отключаем хелсчеки для Railway
+healthcheck = false
+startCommand = "node express-server.js"
+restartPolicyType = "no"
+numReplicas = 1
 
 # Добавляем секцию для указания Docker
 [container]

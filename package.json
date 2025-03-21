@@ -8,7 +8,10 @@
     "build:docker": "NODE_OPTIONS=--openssl-legacy-provider next build --config next.config.js",
     "start": "NODE_OPTIONS=--openssl-legacy-provider node express-server.js",
     "lint": "next lint",
-    "db": "ts-node src/cli/supabase-manager.ts"
+    "db": "ts-node src/cli/supabase-manager.ts",
+    "prepare-deploy": "node prepare-deploy.js",
+    "restore-after-deploy": "node restore-after-deploy.js",
+    "deploy": "npm run prepare-deploy && railway up && npm run restore-after-deploy"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",

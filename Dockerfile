@@ -7,6 +7,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
+ENV NEXT_DISABLE_HEALTHCHECK=1
 
 # Копирование package.json и package-lock.json
 COPY package.json package-lock.json* ./
@@ -16,6 +17,9 @@ RUN npm install
 
 # Копирование файлов приложения
 COPY . .
+
+# Подготовка к деплою - заменяем стили на упрощенную версию
+RUN cp src/app/deploy-globals.css src/app/globals.css
 
 # Открытие порта
 EXPOSE 3000
