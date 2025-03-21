@@ -7,4 +7,8 @@ startCommand = "node server.js"
 healthcheckPath = "/"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10 
+restartPolicyMaxRetries = 10
+
+# Добавляем секцию для указания Docker
+[container]
+expose = 3000 

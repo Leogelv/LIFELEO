@@ -24,8 +24,13 @@ ENV NODE_ENV production
 ENV NEXT_PUBLIC_BUILD_MODE docker
 ENV NODE_OPTIONS=--openssl-legacy-provider
 
-# Собираем проект (с модифицированной командой, чтобы избежать экспортных ошибок)
+# Собираем проект (с модифицированной командой)
 RUN npm run build
+
+# Копируем статические файлы в standalone директорию
+RUN cp -r public .next/standalone/ && \
+    mkdir -p .next/standalone/.next/static && \
+    cp -r .next/static .next/standalone/.next/
 
 # 3. Создаем образ для запуска
 FROM base AS runner
@@ -37,17 +42,12 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Копируем необходимые файлы
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./
-COPY --from=builder /app/package.json ./package.json
-
-# Копируем .next с правильными разрешениями 
+# Копируем standalone директорию целиком
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Убедимся, что нам доступны все скрипты из node_modules
-COPY --from=builder /app/node_modules ./node_modules
+# Убедимся, что у нас есть директория для статических файлов
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone/public ./public
 
 USER nextjs
 
