@@ -16,7 +16,7 @@ COPY src ./src
 COPY tsconfig.json ./
 
 # Устанавливаем зависимости
-RUN npm ci
+RUN npm install
 
 # Собираем приложение
 RUN npm run build
