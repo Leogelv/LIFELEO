@@ -22,6 +22,7 @@ ENV NODE_ENV production
 
 # Устанавливаем переменную, чтобы избежать проблем со сборкой
 ENV NEXT_PUBLIC_BUILD_MODE docker
+ENV NODE_OPTIONS=--openssl-legacy-provider
 
 # Собираем проект (с модифицированной командой, чтобы избежать экспортных ошибок)
 RUN npm run build
@@ -44,6 +45,9 @@ COPY --from=builder /app/package.json ./package.json
 # Копируем .next с правильными разрешениями 
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Убедимся, что нам доступны все скрипты из node_modules
+COPY --from=builder /app/node_modules ./node_modules
 
 USER nextjs
 
