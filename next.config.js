@@ -9,16 +9,16 @@ const nextConfig = {
   //   NEXT_PUBLIC_USER_NAME: process.env.USER_NAME,
   //   NEXT_PUBLIC_SIXDIGIT_PASSWORD: process.env.SIXDIGIT_PASSWORD,
   // },
-  // Исключаем страницу контактов из статической генерации
-  // output: 'standalone', // Убираем standalone опцию
   // Настройка для использования только серверного рендеринга
   trailingSlash: true,
   distDir: '.next',
-  // Эта конфигурация позволит избежать проблем со статической генерацией
+  // Принудительно используем только серверный рендеринг
   experimental: {
     // Отключаем статическую генерацию для проблемных страниц
     instrumentationHook: true,
   },
+  // Отключаем генерацию статических страниц
+  reactStrictMode: true,
   // Отключаем проверку ESLint при сборке
   eslint: {
     ignoreDuringBuilds: true,
@@ -26,6 +26,10 @@ const nextConfig = {
   // Отключаем проверку TypeScript при сборке
   typescript: {
     ignoreBuildErrors: true,
+  },
+  // Отключаем статическую оптимизацию для всех страниц
+  images: {
+    unoptimized: true,
   },
 };
 

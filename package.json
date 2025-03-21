@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "NODE_OPTIONS=--openssl-legacy-provider next build",
     "build:docker": "NODE_OPTIONS=--openssl-legacy-provider next build --config next.config.js",
-    "start": "next start",
+    "start": "NODE_OPTIONS=--openssl-legacy-provider next start -p ${PORT:-3000}",
     "lint": "next lint",
     "db": "ts-node src/cli/supabase-manager.ts"
   },
