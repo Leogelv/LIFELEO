@@ -3,14 +3,14 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 // Проверка наличия параметров Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://supashkola.ru";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzM0ODExMjAwLAogICJleHAiOiAxODkyNTc3NjAwCn0.CkO2sAnfGPgtTGHckFJhoF5_LnmecwWdigoC-N43ooI";
 const supabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
 
-if (!supabaseConfigured) {
-  console.warn('⚠️ Supabase URL or Anon Key is not set - database functionality will be unavailable');
-  console.log('Debug: NEXT_PUBLIC_SUPABASE_URL =', process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log('Debug: NEXT_PUBLIC_SUPABASE_ANON_KEY exists =', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  console.warn('⚠️ Используются фолбэк-значения для Supabase! В продакшене это небезопасно!');
+  console.log('Debug: NEXT_PUBLIC_SUPABASE_URL =', process.env.NEXT_PUBLIC_SUPABASE_URL || 'используется фолбэк');
+  console.log('Debug: NEXT_PUBLIC_SUPABASE_ANON_KEY exists =', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'используется фолбэк');
 }
 
 // Создаем клиент только если есть URL и ключ
