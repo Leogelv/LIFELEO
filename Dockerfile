@@ -18,8 +18,11 @@ COPY tsconfig.json ./
 # Устанавливаем зависимости
 RUN npm install
 
-# Собираем приложение
+# Собираем приложение (статический экспорт)
 RUN npm run build
+
+# Копируем out директорию (результат статического экспорта) в публичную директорию Express
+RUN mkdir -p public/out && cp -r out/* public/out || true
 
 # Открываем порт
 EXPOSE 3000

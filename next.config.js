@@ -9,9 +9,14 @@ const nextConfig = {
   //   NEXT_PUBLIC_USER_NAME: process.env.USER_NAME,
   //   NEXT_PUBLIC_SIXDIGIT_PASSWORD: process.env.SIXDIGIT_PASSWORD,
   // },
-  // Настройка для использования только серверного рендеринга
+  
+  // Конфиг для полностью серверного рендеринга
   trailingSlash: true,
   distDir: '.next',
+  
+  // Отключаем экспорт статический файлов
+  output: "export",
+  
   // Принудительно используем только серверный рендеринг
   experimental: {
     // Отключаем статическую генерацию
@@ -19,22 +24,28 @@ const nextConfig = {
     // Отключаем сбор данных страниц
     disableOptimizedLoading: true,
   },
+  
   // Отключаем строгий режим React
   reactStrictMode: false,
+  
   // Отключаем проверку ESLint при сборке
   eslint: {
     ignoreDuringBuilds: true,
   },
+  
   // Отключаем проверку TypeScript при сборке
   typescript: {
     ignoreBuildErrors: true,
   },
+  
   // Отключаем статическую оптимизацию для всех страниц
   images: {
     unoptimized: true,
   },
+  
   // Отключаем оптимизацию сборки
   swcMinify: false,
+  
   // Отключаем сбор данных страниц
   optimizeFonts: false,
 };
