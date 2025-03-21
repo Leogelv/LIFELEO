@@ -5,21 +5,15 @@ WORKDIR /app
 
 # Установка переменных окружения
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
-ENV NEXT_DISABLE_HEALTHCHECK=1
 
-# Копирование package.json и package-lock.json
+# Копирование только необходимых файлов
 COPY package.json package-lock.json* ./
+COPY express-server.js ./
+COPY public ./public
 
-# Установка зависимостей
-RUN npm install
-
-# Копирование файлов приложения
-COPY . .
-
-# Подготовка к деплою - заменяем стили на упрощенную версию
-RUN cp src/app/deploy-globals.css src/app/globals.css
+# Установка только необходимых зависимостей
+RUN npm install express
 
 # Открытие порта
 EXPOSE 3000

@@ -1,34 +1,112 @@
 const express = require('express');
-const { createServer } = require('http');
-const next = require('next');
+const path = require('path');
 
-const port = parseInt(process.env.PORT, 10) || 3000;
-// Всегда используем dev режим
-const app = next({ dev: true });
-const handle = app.getRequestHandler();
+// Настройки порта
+const PORT = process.env.PORT || 3000;
 
-app.prepare().then(() => {
-  const server = express();
+// Создаем Express приложение
+const app = express();
 
-  // Статические файлы из папки public
-  server.use(express.static('public'));
+// Статические файлы
+app.use(express.static(path.join(__dirname, 'public')));
 
-  // API эндпоинт для проверки статуса
-  server.get('/api/status', (req, res) => {
-    res.json({ status: 'ok', server: 'express', mode: 'development' });
+// Основной маршрут
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>LIFELEO</title>
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          background-color: #000;
+          color: #fff;
+          margin: 0;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+        }
+        .container {
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+        h1 {
+          font-size: 2.5rem;
+          margin-bottom: 1rem;
+        }
+        p {
+          font-size: 1.2rem;
+          margin-bottom: 0.5rem;
+        }
+        .menu {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          margin-top: 2rem;
+        }
+        .menu-item {
+          background-color: #1a1a1a;
+          padding: 1rem;
+          border-radius: 8px;
+          transition: background-color 0.2s;
+        }
+        .menu-item:hover {
+          background-color: #333;
+        }
+        .emoji {
+          font-size: 1.5rem;
+          margin-right: 0.5rem;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>LIFELEO</h1>
+        <p>Добрый день!</p>
+        <p>Приложение работает и запущено в режиме обслуживания.</p>
+        <p>Основные функции временно недоступны.</p>
+        
+        <div class="menu">
+          <div class="menu-item">
+            <span class="emoji">📋</span> Задачи
+          </div>
+          <div class="menu-item">
+            <span class="emoji">🔄</span> Привычки
+          </div>
+          <div class="menu-item">
+            <span class="emoji">📝</span> Заметки
+          </div>
+          <div class="menu-item">
+            <span class="emoji">👥</span> Контакты
+          </div>
+          <div class="menu-item">
+            <span class="emoji">🤖</span> Голосовой бот
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
+// API endpoint для проверки статуса
+app.get('/api/status', (req, res) => {
+  res.json({
+    status: 'ok',
+    mode: 'maintenance',
+    message: 'Сервер работает в режиме обслуживания'
   });
+});
 
-  // Обработка всех остальных запросов через Next.js
-  server.all('*', (req, res) => {
-    return handle(req, res);
-  });
-
-  // Создаем HTTP сервер и слушаем порт
-  createServer(server).listen(port, (err) => {
-    if (err) throw err;
-    console.log(`> Ready on http://localhost:${port} [DEV MODE]`);
-  });
-}).catch(err => {
-  console.error('Error starting server:', err);
-  process.exit(1);
+// Запускаем сервер
+app.listen(PORT, () => {
+  console.log(`Сервер запущен на порту ${PORT} в режиме обслуживания`);
 }); 
