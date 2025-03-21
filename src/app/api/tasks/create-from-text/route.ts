@@ -10,12 +10,21 @@ const supabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
 
 if (!supabaseConfigured) {
   console.warn('⚠️ Supabase URL or Anon Key is not set - database functionality will be unavailable');
+  console.log('Debug: NEXT_PUBLIC_SUPABASE_URL =', process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log('Debug: NEXT_PUBLIC_SUPABASE_ANON_KEY exists =', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
 // Создаем клиент только если есть URL и ключ
-const supabase = supabaseConfigured 
-  ? createClient(supabaseUrl!, supabaseAnonKey!)
-  : null;
+let supabase = null;
+try {
+  if (supabaseConfigured) {
+    supabase = createClient(supabaseUrl!, supabaseAnonKey!);
+    console.log('✅ Supabase client created successfully');
+  }
+} catch (error) {
+  console.error('❌ Error creating Supabase client:', error);
+  supabase = null;
+}
 
 // Проверка DEEPSEEK_API_KEY
 const deepseekApiKeyExists = !!process.env.DEEPSEEK_API_KEY;
