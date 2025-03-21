@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "NODE_OPTIONS=--openssl-legacy-provider next build",
     "build:docker": "NODE_OPTIONS=--openssl-legacy-provider next build --config next.config.js",
-    "start": "NODE_OPTIONS=--openssl-legacy-provider next start -p ${PORT:-3000}",
+    "start": "NODE_OPTIONS=--openssl-legacy-provider node express-server.js",
     "lint": "next lint",
     "db": "ts-node src/cli/supabase-manager.ts"
   },
@@ -31,6 +31,7 @@
     "commander": "^11.1.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.3.1",
+    "express": "^4.18.3",
     "framer-motion": "^11.15.0",
     "html2pdf.js": "^0.10.2",
     "lodash": "^4.17.21",
