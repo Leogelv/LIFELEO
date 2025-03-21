@@ -10,7 +10,7 @@ const nextConfig = {
   //   NEXT_PUBLIC_SIXDIGIT_PASSWORD: process.env.SIXDIGIT_PASSWORD,
   // },
   // Исключаем страницу контактов из статической генерации
-  output: 'standalone',
+  // output: 'standalone', // Убираем standalone опцию
   // Настройка для использования только серверного рендеринга
   trailingSlash: true,
   distDir: '.next',
