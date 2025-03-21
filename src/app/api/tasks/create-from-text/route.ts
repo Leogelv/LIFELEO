@@ -3,10 +3,19 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { v4 as uuidv4 } from 'uuid'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
+// Проверка наличия параметров Supabase
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
+
+if (!supabaseConfigured) {
+  console.warn('⚠️ Supabase URL or Anon Key is not set - database functionality will be unavailable');
+}
+
+// Создаем клиент только если есть URL и ключ
+const supabase = supabaseConfigured 
+  ? createClient(supabaseUrl!, supabaseAnonKey!)
+  : null;
 
 // Проверка DEEPSEEK_API_KEY
 const deepseekApiKeyExists = !!process.env.DEEPSEEK_API_KEY;
@@ -45,6 +54,16 @@ const systemPrompt = `
 
 export async function POST(request: Request) {
   try {
+    // Проверяем наличие Supabase
+    if (!supabaseConfigured || !supabase) {
+      return NextResponse.json({ 
+        error: 'Supabase is not configured',
+        details: 'The Supabase URL and Anonymous Key are required but not set in the environment variables.'
+      }, { 
+        status: 503 // Service Unavailable
+      })
+    }
+
     // Проверяем наличие DEEPSEEK_API_KEY
     if (!deepseekApiKeyExists || !client) {
       return NextResponse.json({ 
