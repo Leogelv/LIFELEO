@@ -17,9 +17,6 @@ RUN npm install
 # Копирование файлов приложения
 COPY . .
 
-# Сборка приложения
-RUN npm run build
-
 # Открытие порта
 EXPOSE 3000
 

@@ -3,8 +3,8 @@ const { createServer } = require('http');
 const next = require('next');
 
 const port = parseInt(process.env.PORT, 10) || 3000;
-const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev });
+// Всегда используем dev режим
+const app = next({ dev: true });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
@@ -15,7 +15,7 @@ app.prepare().then(() => {
 
   // API эндпоинт для проверки статуса
   server.get('/api/status', (req, res) => {
-    res.json({ status: 'ok', server: 'express' });
+    res.json({ status: 'ok', server: 'express', mode: 'development' });
   });
 
   // Обработка всех остальных запросов через Next.js
@@ -26,7 +26,7 @@ app.prepare().then(() => {
   // Создаем HTTP сервер и слушаем порт
   createServer(server).listen(port, (err) => {
     if (err) throw err;
-    console.log(`> Ready on http://localhost:${port}`);
+    console.log(`> Ready on http://localhost:${port} [DEV MODE]`);
   });
 }).catch(err => {
   console.error('Error starting server:', err);
