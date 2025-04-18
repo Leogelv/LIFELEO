@@ -7,6 +7,6 @@ export interface Todo {
   telegram_id: number
   notes?: string
   repeat_ends?: string
-  category?: string
-  tags?: string[]
+  category_id?: number
+  habit_id?: string
 } 

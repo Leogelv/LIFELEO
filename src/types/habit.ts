@@ -1,10 +1,11 @@
-import { HabitCategory } from '@/app/components/habits/config/categoryConfig'
+import { Category } from './category'
+import { Tag } from './tag'
 
 export interface Habit {
   id: string
   name: string
   telegram_id: number
-  category: HabitCategory
+  category_id?: number
   target_value: number
   created_at: string
   active: boolean
@@ -18,7 +19,10 @@ export interface Habit {
   repeat_ends?: string
   updated_at?: string
   notes?: string
-  tags?: string[]
+  values_add?: string     // Строка с числами для кнопок добавления прогресса
+  values_del?: string     // Строка с числами для кнопок вычитания прогресса
+  measure?: string        // Единица измерения (шт, мл, мин и т.д.)
+  related_todos?: string[] // Пока оставляем (uuid[] в БД)
 }
 
 export interface HabitStats {
@@ -38,9 +42,12 @@ export interface HabitLog {
   date: string
   created_at: string
   notes?: string
+  completed_at?: string   // Дата и время выполнения
 }
 
-export interface HabitWithStats extends Habit {
+export interface HabitWithDetails extends Habit {
+  category?: Category
+  tags?: Tag[]
   stats?: HabitStats
   logs?: HabitLog[]
 } 
